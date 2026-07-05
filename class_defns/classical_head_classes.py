@@ -44,5 +44,7 @@ if __name__=="__main__":
     layer_geometry = torch.tensor([4,64,2],dtype=torch.int)
     nn_object = neural_net(layer_geometry,activation_functions=activation_functions)
     print(nn_object)
-    print(nn_object.forward(torch.tensor([[1,2,3,4]],dtype=torch.float32)))
+    input_vector = [[1,2,3,4]]
+    print(nn_object.forward(torch.tensor(input_vector,dtype=torch.float32)))
+    print(input_vector)
     # print(nn_object.)

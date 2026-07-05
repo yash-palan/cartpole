@@ -1,6 +1,7 @@
 import os
 import torch 
 import pennylane as qp
+import matplotlib.pyplot as plt
 
 def one_layer_of_qvc(weight_matrix:torch.Tensor,n_wires):
     """
@@ -38,9 +39,6 @@ def complete_variational_quantum_circuit_function(input_vector:torch.Tensor,
     """
     number_of_layers = complete_weight_matrix.shape[0]
     number_of_wires = complete_weight_matrix.shape[1]
-    # checks
-    # if(complete_weight_matrix.shape[0]!=number_of_layers):
-    #     raise Exception("complete_weight_matrix has the wrong size in the first dimension. It should be same as the number_of_layers.")    
     
     for wire_number in range(number_of_wires):
         # qp.RZ(phi=input_vector[wire_number]*torch.pi,wires=wire_number)
@@ -77,7 +75,10 @@ class complete_quantum_variational_circuit(torch.nn.Module):
         @qp.qnode(device = self.device, interface="torch")
         def circuit(input_vector):
             # --- state preparation ---
-            qp.AngleEmbedding(input_vector, wires=range(self.number_of_wires))
+            qp.AngleEmbedding(input_vector*torch.pi, wires=range(self.number_of_wires))
+            # trial_input_vector = input_vector*torch.pi
+            # qp.AngleEmbedding(trial_input_vector, wires=range(self.number_of_wires))
+
             qp.Barrier(wires=range(self.number_of_wires))
             # --- variational circuit ---
             # return(self.qvc(input_vector = angle_embeddings,
@@ -89,10 +90,24 @@ class complete_quantum_variational_circuit(torch.nn.Module):
         
         return circuit
 
+    def draw_quantum_circuit(self, input_vector:torch.Tensor):
+        circuit = self.build_qnode()
+
+        print(qp.draw(circuit)(input_vector))
+        
+        qp.draw_mpl(qnode=circuit,style = "pennylane")(input_vector)
+        plt.show()
+
+        return 
+    
     def forward(self, input_vector:torch.Tensor):
         circuit = self.build_qnode()
-        print(qp.draw(circuit)(input_vector))
-        return circuit(input_vector)
+        # print(qp.draw(circuit)(input_vector))
+        
+        # We need to concatenate so that the computational graph is not broken
+        # Also, the dtype is wrong (it is float64) which we need to convert to 
+        # float 32. The dim=1 takes care of the minibatch case 
+        return (torch.stack(circuit(input_vector),dim=1).to(dtype=torch.float32))
     
 
 if __name__=="__main__":
@@ -100,7 +115,9 @@ if __name__=="__main__":
     complete_weight_matrix = torch.tensor([[[0.1,0.2,0.3],[0.4,0.5,0.6],[0.7,0.8,0.9],[1.1,1.2,1.3]]]
                                           ,dtype=torch.float32)
     # input_vector = torch.tensor([[0.1],[0.2],[0.3],[0.4]],dtype=torch.float32)
-    input_vector = torch.tensor([[0.1,0.2,0.3,0.4]],dtype=torch.float32)
+    # input_vector = torch.tensor([[0.1,0.2,0.3,0.4]],dtype=torch.float32)
+    input_vector = torch.tensor([[0.1,0.2,0.3,0.4],
+                                 [0.1,0.2,0.3,0.4]],dtype=torch.float32)
 
     dev = qp.device('default.qubit',wires = complete_weight_matrix.shape[1])
     qvc_func = complete_variational_quantum_circuit_function
@@ -110,10 +127,10 @@ if __name__=="__main__":
     result = qvc_object.forward(input_vector)
     loss = result[0]
     print(result)
-    
+    # print(torch.stack(result,dim = 1))
     # CHeck for gradient flow
-    print(loss)
+    # print(loss)
     
-    print(loss.backward())
+    # print(loss.backward())
 
-    print(qvc_object.weights.grad)
+    # print(qvc_object.weights.grad)
