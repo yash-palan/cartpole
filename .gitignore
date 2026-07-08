@@ -1,1 +1,17 @@
 results/*
+report/*.aux
+report/*.aux
+report/*.acn
+report/*.bbl
+report/*.glo
+report/*.ist
+report/*.gz
+report/*.txss2
+report/*.log
+report/*.m
+report/*.bbl-SAVE-ERROR
+report/*.zip
+report/*.fig
+report/figures/*
+pennylane_gradient_trial.ipynb
+pennylane_gradient_trial.py

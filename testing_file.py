@@ -2,38 +2,41 @@ import os
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
 import torch
-import torch.nn as nn
-import class_defns.classical_head_classes as chc
-import class_defns.quantum_circuit_classes as qcc
 import class_defns.RL_classes as rlc
-import numpy as np
-# import copy
 import gymnasium as gym
 import matplotlib.pyplot as plt
 import time
-import pennylane as qp
-import torch.nn.functional as F 
-from train_file import initializing_qvc,creating_network
 from class_defns.utility_functions import loading_dot_pt_files,plotting_testing_plot
-
-def plot_rewards(rewards,mean_range=1):    
-        # The parameter mean_range must allow equal separation of rewards
-        if len(rewards) % mean_range != 0:
-            raise ValueError
-            
-        # Calculate mean rewards
-        mean_rewards = list()
-        for i in range(round(len(rewards)/mean_range)):
-            reward_on_range = rewards[i*mean_range:i*mean_range+mean_range]
-            reward_on_range_mean = round(sum(reward_on_range)/len(reward_on_range))
-            mean_rewards.append(reward_on_range_mean)
-            
-        plt.plot(range(len(mean_rewards)), mean_rewards)
-        plt.show()
-
 
 
 def testing_function(network,env,num_episodes,num_timesteps,buffer_size,batch,epsilon_val):
+    """
+    Tests a DQN agent on a Gymnasium-style environment using a hybrid
+    classical/quantum network architecture.
+
+    Args:
+        network: A agent_brain class type of network which encodes the 
+        brain of the agent
+
+        env: A Gymnasium-style environment exposing `observation_space`,
+            `action_space`, `reset(seed=...)`, and `step(action)`.
+
+        num_episodes: The number of episodes over which the testing has to happen
+        
+        num_timesteps
+
+        buffer_size: buffer size of the memory. Useless here but necessary for creating 
+        the agent. Can be any value.
+
+        batch: batch_size for training, but is useless here. Need it for creating the
+        agent.
+
+        epsilon_val: The epsilon value for the greedy epsilon policy.
+
+    Returns:
+        [rewards, each_episode_each_iteration_reward]
+    
+    """
     # Define state and action size
     state_size = env.observation_space.shape[0]
     action_size = env.action_space.n
@@ -96,7 +99,6 @@ def testing_function(network,env,num_episodes,num_timesteps,buffer_size,batch,ep
     print(f'Total Time elapsed for training: {elapsed} seconds = {round(elapsed/60, 3)} minutes')
     
     return([rewards, each_episode_each_iteration_reward])
-    # plot_rewards(rewards)
 
 
 if __name__ == "__main__":
@@ -115,21 +117,6 @@ if __name__ == "__main__":
 
     one_iteration_size = 2*state_size+3
     buffer_size = 5000
-
-    # Creating the network
-    # input_clip_learning_network = chc.neural_net(layer_geometry=torch.tensor([state_size,3],dtype=torch.int),
-    #                                              activation_functions=nn.ModuleList([nn.Tanh()]))
-    # # Creating the quantum variational circuit
-    # qvc_network = initializing_qvc(number_of_layers=1,
-    #                                 number_of_wires=3,
-    #                                 quantum_function=qcc.complete_variational_quantum_circuit_function)
-    
-    # # Creating the tail of the circuit
-    # understanding_qvc_network = chc.neural_net(layer_geometry=torch.tensor([3,64,action_size],dtype=torch.int),
-    #                                              activation_functions=nn.ModuleList([nn.ReLU(),nn.Identity()]))
-
-    # # Combining the three
-    # network = creating_network(input_clip_learning_network,qvc_network,understanding_qvc_network)
 
     # Extracting parameters
     base_path = os.getcwd()

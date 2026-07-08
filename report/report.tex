@@ -1,0 +1,424 @@
+\documentclass{article}
+\usepackage{amsmath}
+\usepackage{graphicx}
+% \graphicspath{ {figures/} }
+\usepackage{physics}
+\usepackage{fullpage}
+% \usepackage{tabular}
+\usepackage{tabularx}
+\usepackage{xcolor}
+\usepackage[backend=biber,
+    style=numeric-comp,
+    sorting=none,
+    sortcites=true
+    ]{biblatex}
+\addbibresource{D:/University of Frankfurt/PhD work/work/Terra quantum/cartpole/cartpole/report/bibliography.bib}
+
+
+\title{Hybrid reinforcement learning}
+\author{Yash Palan}
+\date{\today}
+
+\begin{document}
+\maketitle
+%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%
+\section{Introduction}
+%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%
+\par
+The primary objective of the project is the evaluation of quantum-classical neural networks in reinforcement learning (RL). The main objective of this work is to analyze whether the quantum layer contributes beyond what an equivalent classical layer does.  The task that the RL agent needs to solve is that of balancing a pole on a cart, namely CartPole-v1 control task. \\
+\par
+There are three aspects to the task, namely,
+\begin{enumerate}
+    \item Library creation
+    \item Research question
+    \item Fault tolerant analysis
+\end{enumerate} 
+Given the 24 hour time budget of the project, my main focus has been on Part b of the question. Below, I summarize how I distributed my effort across the three parts of the project
+\begin{enumerate}
+    \item \textbf{Library creation} 
+        \begin{itemize}
+            \item \textbf{OOPs based programming:} OOPs concepts were kept in mind while programming the codes, namely modularity was heavily focused on. Inheritance was not as useful for this library. 
+            \item \textbf{Config driven experiments:} The hyperparameters can be passed via a ``config.json'' document or through a similar dictionary in the ``train.py'' file, which would then take care of training the network.
+            \item \textbf{Docstrings and type hints:}Appropriate type hints and docstrings are added in functions for simplicity of understanding and clarity of the function's intended purpose.
+            \item \textbf{Extensible Design}: The config dependent design also supports both a classical neural net (NN) and hybrid NN.
+            \item \textbf{Error handling}: Basic error handling has been taken into account. However, all possible errors have not necessarily been taken into consideration due to time constraints.
+        \end{itemize}
+    \item \textbf{Research question}:
+        \begin{itemize}
+            \item \textbf{Architecture search:} Taking inspiration from classical neural nets, a quantum layer was defined based on the number of qubits~\cite{lockwood2020:reinforcementlearningquantumvariational}. A schematic of the same is shown in figure \ref{fig:}. A search was conducted on the number of qubits and the number of quantum layers to find the best architecture.
+            \item \textbf{Quantitative measure of usefulness}: Two quantitative measure of usefulness were defined for the quantum layer. The metrics for the best architecture were then extracted and inferences made based on that.
+            \item \textbf{Comparison with classical baseline:} A classical baseline with similar parameter count was created to compare the quantum results to.  
+            \item \textbf{Reproducibility:} The results for the training of the RL-agent was repeated for $5$ unique seeds. The number $5$ was chosen simply because of the time constraints. This was done for each architecture. The corresponding plots are shown later in the report. 
+        \end{itemize}
+    \item \textbf{Fault tolerant computing}:
+        \begin{itemize}
+            \item \textbf{T gate counting:} The number of T gates for the best performing ansatz were considered and the T gate count and T gate depth were repoted for various $\epsilon$.
+        \end{itemize}
+\end{enumerate}
+
+%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%
+\section{Library Design}
+%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%
+%%%%
+%%%%
+\begin{table}[t]
+    \centering
+    \begin{tabular}{|c|c|}
+        \hline
+       Package name & Version\\
+        \hline 
+        numpy& 2.1.3\\
+       scipy & 1.17.1\\
+       torch & 2.11.0+cu126\\
+        scikit-learn & 1.8.0\\
+       gymnasium & 1.3.0\\
+       pennylane & 0.45.1\\
+       matplotlib & 3.10.8\\
+       os & \\
+       time & \\
+       json & \\ 
+        \hline
+    \end{tabular}
+    \caption{Package version table}
+    \label{tab:package_version_table}
+\end{table}
+%%%%
+%%%%
+A brief summary of the library design was provided in the previous section. Here we provide more details regarding the abstraction made and provide reasoning for the same. \\
+The main abstaraction that has been made is that of RL agent, where the RL agent is broken into three parts
+\begin{enumerate}
+    \item RL agent brain 
+    \item RL agent memory (defined by buffer)
+    \item RL agent body (everything else that is necessary for training).
+\end{enumerate}
+The brain is then made up of three neural nets, namely the $2$ classical NNs, and one quantum NN sandwitched between the two, as shown in figure \ref{fig:Architecture_of_agents_brain}. The same are defined in different python files. All of this is put into a folder named  ``\texttt{class\_defns}''. A more detailed version of what each file contains is as below
+\begin{enumerate}
+    \item \textbf{\texttt{classical\_head\_classes.py}:} Just defines the classical deep neural network class called ``\texttt{neural\_net}''. 
+    \item \textbf{\texttt{quantum\_circuit\_classes.py}:} Defines the functions that make up the quantum circuit. It constraints
+    \begin{itemize}
+        \item Function defining quantum neural net layer 
+        \item Quantum function for making the complete quantum neural net.
+        \item class which stores the weights and circuit information, as well as the quantum function for making the circuit (similar to the classical case). Note that this class can accept any quantum function for its argument, not just the one defined in this file. 
+    \end{itemize}
+    \item \textbf{\texttt{RL\_classes.py}:} This has two classes 
+        \begin{itemize}
+            \item agent\_brain: This class defines the brain of the RL-agent. It has three parts, namely two classical NNs and one quantum NN, as shown in figure \ref{fig:Architecture_of_agents_brain}.
+            \item DQN\_agent: This class defines the actual agent and stores all the actions that the agent can take. It can also accepts various inputs for the agent's brain, not just the network defined by the previous class. The only catch is that the agent\_brain network must have a forward function (as is in classical NNs).  
+            \item Buffer\_class: This defines the memory of the RL-agent.
+        \end{itemize}  
+    \item \textbf{\texttt{utility\_functions.py}}: Stores basic utility functions like loading a ``\texttt{.json}'' file or plotting the results of a training run. Can hold more utility functions.
+\end{enumerate}
+Next, the training and the testing files are kept in the main folder for simplicity purposes. Finally, the remianing files contain the usefulness metric, and the T gate depth and count counting functions. The t gate counting functions have not been abstracted since there was no time left for the same. \\
+Finally, the versions of the packages used in all of the codes is shown in table \ref{tab:package_version_table}. 
+
+%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%
+\section{Experimental setup}
+%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%
+%%%%%%
+%%%%%%
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.9\textwidth]{figures/architecture.pdf}
+    \caption{Architecture of the agent's brain}
+    \label{fig:Architecture_of_agents_brain}
+\end{figure}
+%%%%%%
+%%%%%%
+The task that we wish to accomplish is balancing a pole on a cart, where the pole has certain initial velocity. This task is generally solved using reinforcement learning (RL) based methods, where an agent learns what actions it needs to perform to maximize the reward (in this case keeping the pole up). There are multiple different strategies that people generally use to solve such problems, however, here we will use the strategy know asn \textbf{Deep-Q networks} (DQN). The idea behind a DQN is that instead of learning what move to make next, the agent learns to predict the cumulative future reward that it would get if it makes a certain move. The function which gives the agent this information is called the \textbf{Q-function}. The task that we now have to achieve is to find out what the Q function is, which is where we use machine learning based methods. So, the hybrid neural net will be used to approximate the true Q function. \\
+The architecture that we for hybrid quantum-classical neural network is shown in figure \ref{fig:Architecture_of_agents_brain}. 
+The architecture basically consists of a classical NN head, a quantum NN body, and a classical NN tail. 
+This architecture was chosen for the following reasons
+\begin{enumerate}
+    \item \textbf{Generalizability to mulitple input quantum bits:} This method of encoding allow one to generalize to a variable number of qubits. As an example, if we just had the quantum layer without the head, then the input number of qubits (assuming angle encoding) cannot be more than 4 (for our case since the state vector is 4D). This choice of architecture removes such a restriction.
+    \item \textbf{Input range restriction:} For the angle embedding, we need to restrict our inputs to $[-\pi,\pi)$ or equivalently $(-1,1)$. However, there can be inputs whose range is $(-\infty,\infty)$. So, it is essential for us to find a clip for the same. The head basically learns this clip.
+    \item \textbf{Encoding feasibility for the quantum layer:} The clipping nature of the head also allows for the encoding to be more dense, since it allows us to use angle encoding. Otherwise, we would need to encode each bit in a qubit, making the encoding space too large. 
+    \item \textbf{Interpretation of quantum layer:} Finally, the tail also allows one to effective sum over the final outputs of the quantum layer. It basically acts as an interpreter/ decoder of the quantum layer. 
+\end{enumerate}
+With regards to the actual quantum NN, it is made of mainly two components, 
+\begin{enumerate}
+    \item \textbf{Input encoding:} The input encoding is essential to be able to encode the input vectors into a form that needs less qubits. I have used angle based encoding, with a combination of $R_x(\phi), R_z(\phi)$ gates for each value in the input vector. The same is shown in figure \ref{fig:Architecture_of_qnn} as the green box. 
+    \item \textbf{Quantum layer:} The quantum layer is the layer which can be repeated to create the whole circuit. An example of the same is shown in figure \ref{fig:Architecture_of_qnn}.
+\end{enumerate}
+Thus our hyperparameters are 
+\begin{enumerate}
+    \item \textbf{Head:}
+    \begin{itemize}
+        \item Layer geometry of the head 
+    \end{itemize}
+    \item \textbf{Quantum circuit:}
+    \begin{itemize}
+        \item Number of qubits 
+        \item Number of layers
+    \end{itemize}
+    \item \textbf{Tail:}
+    \begin{itemize}
+        \item Layer geometry of the tail. 
+    \end{itemize}
+\end{enumerate}
+By varying the number of qubits and the number of layers, we can obtain different ans{\"a}tz for the quantum layer/ quantum NN.\\
+Remark - Details regarding the seeds and baselines will be given in the results sections
+
+%%%%%%
+%%%%%%
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=\textwidth]{figures/quantum_layer_architecture.pdf}
+    \caption{Architecture of the quantum layer. The yellow box represents the angle embedding part, the blue box the individual repeating quantum layer and the green the $\sigma_Z$ measurement. This architecture has been adapted from \cite{lockwood2020:reinforcementlearningquantumvariational}}.
+    \label{fig:Architecture_of_qnn}
+\end{figure}
+%%%%%%
+%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%
+\section{Usefulness metrics}
+%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%
+%%%%%%
+%%%%%%
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=\textwidth]{figures/quantum_compare.png}
+    \caption{Comparison of the various ans{\"a}tz for the quantum layer. Note that the shaded regions denote the error bars of the system. The error bars are taken to be one sigma above and below the mean.}
+    \label{fig:quantum_comparison_results}
+\end{figure}
+%%%%%%
+%%%%%%
+
+As is defined in the project, the task is not to find a hybrid model that's better but to be able to evaluate whether the quantum layer truly adds to the working of the neural network and if so how. We thus need quantitatives measures which could describe the quantum layer and also what its effects. \\
+One direction to be motivated by is the fact that quantum states are useful because of the property of superposition and entanglement. Thus, if could extract this information, then that would tell us about the working of the quantum layer. However, this is only useful when restricted to inputs for the trained enviornment and thus we only consider input vectors which are a states of the enviornment.
+Keeping the above motivation in mind, we can define the following two quantities
+\begin{enumerate}
+    \item \textbf{Compression ratio:} The compression ratio computes the amount of compression that the quantum layer performs. So, given the input of the quantum layer as $\va{\text{in}}$ and the output be $\va{\text{out}}$, one can consider the dimension of the subspace that encodes $95\%$ of the information for both the input vectors and output vectors. Let the dimensions be $d_{in}$ and $d_{out}$. Then, we can define the \textbf{Compression ratio} $C$ as 
+    \begin{align}
+        C = 1 - \frac{d_{out}}{d_{in}}.
+    \end{align}
+    The gives us information about how much of the information could be compressed by the qunatum layer.
+
+    \item \textbf{Average entanglement entropy:} For systems with multiple qubits, entanglement entropy is not defined normally. So, we compute the bipartite entropy 
+    \begin{align}
+        \mathcal{S}(\rho_{i}) = -\Tr[\rho_i\log(\rho_i)],
+    \end{align}
+    where $\rho_{i}$ is the reduced density matrix for qubit $i$. Thus, given input vectors, $\va{\text{in}}$, we can look at the output vectors $\va{\text{in}}$ and compute the entanglement entropy corersponding to the output state and qubit $i$ $\left(\mathcal{S}(\rho^{\va{\text{out}}}_{i})\right)$. The averaged entanglement entropy is thus 
+    \begin{align}
+        \mathcal{A}_{i} = \sum_{\va{\text{out}}} \mathcal{S}(\rho^{\va{\text{out}}}_{i}).
+    \end{align} 
+    The above provides us information about 
+    \begin{itemize}
+        \item Freedom of measurement: Since the output state is supposed to be based on measurements, this gives us information about how correlated measurements would be.
+        \item Link to Barren plateau problem: This can also provide some insight into the barren plateau problem (since we can look at the probability distribution and compare it to the Haar distribution).
+    \end{itemize}
+\end{enumerate}
+%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%
+\section{Results}
+%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%
+%%%%%%
+%%%%%%
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=\textwidth]{figures/quantum_classical_compare.png}
+    \caption{Comparison of the quantum model with the classical benchmarks. Note that the shaded regions denote the error bars of the system. The error bars are taken to be one sigma above and below the mean.}.
+    \label{fig:quantum_classical_comparison}
+\end{figure}
+%%%%%%
+%%%%%%
+
+%%%%%%
+%%%%%%
+\begin{table}
+    \centering
+    \begin{tabular}{|c|c|c|}
+        \hline 
+        Parameter count & Architecture & Quantum equivalent  
+        \\
+        \hline 
+        265 & $[4,1,1,64,2]$ & Qubit = 1 \\
+        338 & $[4,2,2,64,2]$ & Qubit = 2\\
+        413 & $[4,3,3,64,2]$ & Qubit = 3, layer = 1\\
+        421 & $[4,4,3,64,2]$ & Qubit = 3, layer = 2\\
+        \hline
+    \end{tabular}
+    \caption{This table depcits the architecture of the classical NN used for the baseline, as well as the quantum version it is compared to.}
+    \label{tab:classical_nn_architecture_used_for_baseline}
+\end{table}
+%%%%%%
+%%%%%%
+Having described the architecture of the system and the metrics for understanding the quantum layer, we can now start asking the true question, which quantum layer architecture is the best for the RL CartPole-v1 problem and how it fare compared to the classical benchmarks? \\
+To do so, a small search over the qubit number ($1,2,3$ qubits) and layers ($1,2$ layers) was performed, giving us a total of 6 architectures. Each architecture was trained $5$ times with a unique seed for each training run. The seeds were chosen to be $0,1,2,3,4$ for simplicity. Finally, the results obtained from each training run (the reward as a function of episode) were averaged and the standard deviation of the same was found, for a each architecture. This was then used to make the plots figure \ref{fig:quantum_comparison_results}. \\
+Finally, we also needed a classical benchmark for each of these architectures. Thus, the parameter count for each architecture was extracted and then an equivalent classical NN was created for the same. The architecture for the same is shown in table \ref{tab:classical_nn_architecture_used_for_baseline}. \\
+We can also ask the results for our metrics, namely compression ratio and average entanglement entropy. The results for the same are 
+\begin{enumerate}
+    \item \textbf{Compression ratio:} 
+    \begin{itemize}
+        \item The compression ration for the best quantum circuit was $0$, indicating that no compression took place. 
+        \item In this sense, this metric falls short since 
+    \end{itemize}
+        \item \textbf{Average entanglement entropy:} The results for the average entanglement entropy is shown in table \ref{tab:average_entanglement_table}. It is important to notice that average entanglement in the second qubits for the qubit $3$ case is higher then the qubit $2$ case.
+\end{enumerate}
+
+%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%
+\section{Discussion}
+%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%
+%%%%%%
+%%%%%%
+\begin{table}
+    \centering
+    \begin{tabular}{|c|c|c|c|c|c|}
+        \hline
+        Layer & Qubits&  & qubit 1 & qubit 2 & qubit 3 \\
+        \hline 
+        2 & 1 & mean & $-2.6229 \times 10^{-8} \approx 0$ & NA & NA\\
+        & & standard deviation & $2.1312\times 10^{-15} \approx 0$ & NA & NA \\
+        \hline 
+        2 &2 & mean & $0.3466$  & $0.3466$ & NA\\
+        & & standard deviation & $0.0190$ & $0.0190$ & NA \\
+        \hline 
+        2 & 3 & mean & $0.3305$ & $0.7390$ & $0.6517$\\
+        & & standard deviation & $0.0666$ & $0.0137$ & $0.0128$ \\
+        \hline
+    \end{tabular}
+    \caption{Here we show the average entanglement entropy for the different architectures. Note that the entanglement entropy does not grow for the first qubit, but does for the second and the third.}
+    \label{tab:average_entanglement_table}
+\end{table}
+%%%%%%
+%%%%%%
+Having briefly presneted the results for the metrics, we now turn to the inferences that we can make from the everything that has been presented the previous sections.  
+\begin{enumerate}
+    \item \textbf{Best quantum architecture:} The best quantum architecture is the case with \textbf{layer $= 2$, qubits $= 3$}. However, one can easily argue that \textbf{layer $= 1$, qubits $= 2$} is an equivalently good contender, and indeed, this result is not statistically significant (upto one sigma), however, based on just the mean, \textbf{layer $= 2$, qubits $= 3$} is the best.
+    \item \textbf{Classical vs hybrid:} In terms of the final trained RL agent, the hybrid version does not outshine the classical network. This is clearly seen from figure \ref{fig:quantum_classical_comparison} (a),(b) and (c), where the classical network catches up to the quantum network. 
+    \item \textbf{Effect of entanglement on the system:} It is interesting to note that the increase to the optimal if faster for the quantum version than the classical, specifically in the 2 and 3 quibit cases (notice the strak rise at $iteration = 50$ for the hybrid vs the classical case). From our metric, we notice that the entanglement here is higher, indicating that maybe larger entanglement plays a role in convergence to the optimal solution. 
+    \item \textbf{Entanglement vs superposition:} Now, one may also ask why entanglement and not superposition? The answer to the same is as follows: assume that it was indeed superposition due to which we observe better convergence properties, then it should also be seen in the 1 qubit hybrid model. However, the 1 qubit hybrid model matches the classical model exactly, indicating superposition cannot be the reason. 
+\end{enumerate}
+\textbf{Conclusion 1: The hybrid network has faster convergence properties (upto one sigma significance) than the classical networks. From an accuracy perspective, neither one is better than the other.   
+} \\
+\textbf{Conlusion 2: Quantum layer working: Thus the quantum layer speeds up convergence via the mechanism of entanglement, which was not existent in the classical case. }
+
+%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%
+\section{Fault tolerance probe}
+%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%
+%%%%%%
+%%%%%%
+\begin{table}
+    \centering
+    \begin{tabular}{|c|c|c|c|c|c|}
+        \hline
+        Layer & Qubits& \multicolumn{2}{c}{T gate count} & \multicolumn{2}{c}{Depth}  \\
+        \hline & & $\epsilon =1e-1$ & $\epsilon =1e-3$ & $\epsilon =1e-1$ & $\epsilon =1e-3$\\ 
+        \hline 
+        1 & 3 & $360 $ & $160$ & $152$  & $330$ \\
+        2 & 3 & $410$ & $782$ & $426$ & $778$ \\
+        \hline
+    \end{tabular}
+    \caption{Here we show the T count and depth for the case when we consider two ans{\"a}tz with 3 qubits each. The $\epsilon$ is the precision to which the gates are approximated. }
+    \label{tab:T_gates_count_table}
+\end{table}
+%%%%%%
+%%%%%%
+
+The final analysis that is necessary is the understanding of the real world applicability of the above circuits. However, the only gates that can be made in the real world are the Clifford+T gates, with the T gates introducing error, and the depth introducing error via decoherence. Thus, an understanding of the T gate count and depth provides us with insight on how fault tolerant the hybrid system wiil be.
+Keeping this in mind, I evaluated the T gate count for the layer $1,2$ for the $3$ qubit case. The same is shown in table \ref{tab:T_gates_count_table}.\\
+Clearly, more layers leads to larger depth and more T gates. A larger depth and larger number of T gates basically implies that the final results of such a circuit in real life will not be reliable due to accumulation of errors from decoherence and T gate implementation. Thus, reducing the T count and depth becomes extremely necessary to make hybrid quantum circuits that are truly fault tolerant. 
+
+
+%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%
+\section{Limitations and next steps}
+%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%
+\subsection{Limitations}
+%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%
+Having discussed the conclusion and fault tolerant computing (briefly), it is important to point out the limitations of this study. The limitation are as follows
+\begin{enumerate}
+    \item \textbf{Statistics:} A major limitation in this study is the number of seeds used for producing the plots. Claerly, better statistics would provide more robust results and give better variance bounds, making it easier to make conclusion which are statistically more significant. This is necesasy to make concrete statements, especially of the kind made here.
+    \item \textbf{Time complexity:} Part of the reason for low statistics is the time complexity for computing a single episode for an architecture with 3 qubits and 2 layers. Thus, time complexity of the code needs to be made better to allow for a larger varierty.
+    \item \textbf{Head architecture variation:} In all of the simulations, we have not actually seen the effect of the variation of the head and the tail NNs on the hybrid case. This would be interesting since it would allow us information about how much \textbf{abstract encoding can the quantum layer work with}\cite{}. 
+\end{enumerate}
+%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%
+\subsection{Next steps}
+%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%
+Due to the time constraints, a lot of stuff that should be inverstigated could not be. Here I will mention a few of the future directions where this work could be extremely useful. I break this in 3 parts 
+\begin{enumerate}
+    \item \textbf{Immediate future} 
+    \begin{itemize}
+        \item Make the time complexity of the code better to allow for larger statistics.
+        \item Take into account larger number of training runs to get better statistics and make the conclusions even stronger.
+    \end{itemize}
+    \item \textbf{A little longer future}
+    \begin{itemize}
+        \item The next step would be to also make a search on the head architecture and the tail architecture fixing the quantum layer to see the effect of the same on the hybrid system.
+        \item A secondary extension could be to now use autoencoder based techniques and see how a quantum layer maybe useful in that case.
+        \item Another possibility would be to use another RL based method, like Policy optimisation, and check if the hybrid methods work well there.
+    \end{itemize} 
+    \item \textbf{Speculative future}
+    \begin{itemize}
+        \item Having noticed that convergence is where quantum layers work best, one can try to consider another task, like say playing tetris and see if there we observe a similar behaviour when compared to the classical case.
+        \item The RL based technique can also be used for circuit creation on its own using policy based methods. So, then one can consider using the same to create dynamical circuits that approximate physical Hamiltonian. This type of work would be interesting as that can then help speed up research work since finding relevant Hamiltonians is the hard part. In addition, adding data driven search would make this even better.
+    \end{itemize}
+\end{enumerate} 
+
+
+
+%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%
+\section{LLM usage disclosure}
+%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%
+Naturally, free tier LLMs were used during the work. LLMs were used in the following ways 
+\begin{enumerate}
+    \item \textbf{Literature search:} The free tier LLMs were used to search out papers on hybrid quantum techniques in RL as well as literature on various ans{\"a}tz and T gates.
+    \item \textbf{Learning basics:} In addition, a small time was spent searching and understanding some basics necessary to working. As an example, simple questions about the working of pennylane, and of DQNs were asked (textbook level question), which were verified by citations given there or by looking it up on google as well.
+    \item \textbf{Generation of small code snippets:} During the coding process, LLMs were used to generate small snippets of code and check up on syntax of commands that I did not know well (in addition to documentation).
+    \item \textbf{Soundboard for idea consolidation:} Also, LLMs provide a good soundbaord for ideas of what I wished to do and what I would like to do. It was a good place to just write my thoughts and get some thing back (which was not always correct or even related).
+\end{enumerate}
+%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%
+\section{References used }
+%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%
+\subsection{For coding}
+%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%
+\begin{enumerate}
+    \item \fullcite{DQN_implementation_of_cartpole_github} was used as a reference to write the basic DQN training loop and code for the classical case. This was then extended to the quantum case.
+    \item \fullcite{pennylane_T_gate_inspection}: A short code snippet for the output of the T gate characterisation was used from here.
+\end{enumerate}
+
+%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%
+\subsection{For literature survey}
+%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%
+\begin{enumerate}
+    \item \fullcite{lockwood2020:reinforcementlearningquantumvariational}: The main ans{\"a}tz for the individual layer was taken from here. 
+    \item \fullcite{illesova_2025:qmetric_benchmarking_quantum_neural}: This was used to motivate the first measure of quantum layer usefullness
+    \item \fullcite{Abbas2021:The_power_of_QNN}: For understanding effective dimension (briefly)
+    \item \fullcite{Nagy2025}
+    \item \fullcite{McClean_2018:Barren_plateaus_in_QNN}
+    \item \fullcite{henderson2019:deepreinforcementlearningmatters}
+    \item \fullcite{zaman2024:comparativeanalysishybridquantumclassical}
+    \item \fullcite{mnih2013:playingatarideepreinforcement}: For understanding the DQN idea and what it does, as well as the Bellmann equation.
+    \item \fullcite{chen2020variationalquantumcircuitsdeep}
+    \item \fullcite{aueawatthanaphisut2025hybridquantumclassicalpolicygradient}
+    \item \fullcite{monnet2023poolingtechniqueshybridquantumclassical}
+\end{enumerate}
+%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%
+\printbibliography
+%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%
+\end{document}

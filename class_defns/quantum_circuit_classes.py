@@ -2,10 +2,17 @@ import os
 import torch 
 import pennylane as qp
 import matplotlib.pyplot as plt
-
+#################################
+#################################
 def one_layer_of_qvc(weight_matrix:torch.Tensor,n_wires):
     """
+    Defines one layer of the quantum neural net
+
+    Parameters
+    ------------------------
     weight_matrix: torch tensor of size = (n_wires,3) due to the ansatz
+    n_wires: number of wires in the circuit
+
     """
     if(len(weight_matrix.shape)!=2):
         raise Exception("shape of the weight matrix is incorrect")
@@ -28,21 +35,22 @@ def one_layer_of_qvc(weight_matrix:torch.Tensor,n_wires):
 
     return 
 
-# def measurements():
-#     return(qp.expval(qp.PauliZ(0),qp.PauliZ(1)))
-
+#################################
+#################################
 def complete_variational_quantum_circuit_function(input_vector:torch.Tensor,
                                                 complete_weight_matrix:torch.Tensor)->torch.Tensor:
     """
+    Defines the complete circuit for the quantum neural net (except for the encoding).
+
+    Parameters
+    ------------------------------------------
     complete_weight_matrix: torch tensor of size (number_of_layer,number_of_wires,3)
-    input_vector : The input vector
+    input_vector : The input vector to the layer (batch, number_of_wires)
     """
     number_of_layers = complete_weight_matrix.shape[0]
     number_of_wires = complete_weight_matrix.shape[1]
     
     for wire_number in range(number_of_wires):
-        # qp.RZ(phi=input_vector[wire_number]*torch.pi,wires=wire_number)
-        # Needs a little more understanding
         qp.RZ(phi=input_vector[..., wire_number] * torch.pi, wires=wire_number)
 
     qp.Barrier(wires = range(number_of_wires))
@@ -54,11 +62,51 @@ def complete_variational_quantum_circuit_function(input_vector:torch.Tensor,
     # Can generalize the measurement later
     final_array = [qp.expval(qp.Z(w)) for w in range(number_of_wires)]
     return final_array
+#################################
+#################################
+def complete_variational_quantum_circuit_function_entanglement(input_vector:torch.Tensor,
+                                                complete_weight_matrix:torch.Tensor,
+                                                wire:int)->torch.Tensor:
+    """
+    Defines the complete circuit for the quantum neural net (except for the encoding), however, this is 
+    mainly used for computing the entanglement entropy.
 
+    Parameters
+    -----------------------
+    complete_weight_matrix: torch tensor of size (number_of_layer,number_of_wires,3)
+    input_vector : The input vector
+    """
+    number_of_layers = complete_weight_matrix.shape[0]
+    number_of_wires = complete_weight_matrix.shape[1]
+    
+    for wire_number in range(number_of_wires):
+        qp.RZ(phi=input_vector[..., wire_number] * torch.pi, wires=wire_number)
 
+    qp.Barrier(wires = range(number_of_wires))
+
+    for layer_number in range(number_of_layers):
+        one_layer_of_qvc(complete_weight_matrix[layer_number,:,:],n_wires=complete_weight_matrix.shape[1])
+        qp.Barrier(wires = range(number_of_wires))
+
+    return qp.vn_entropy(wires=[wire], log_base=2)
+#################################
+#################################
 class complete_quantum_variational_circuit(torch.nn.Module):
+    """
+    Class which defines the complete quantum neural net. 
+
+    Parameters
+    --------------
+    qvc: quantum function for the circuit of the quantum neural net
+        ( should have the same inputs as complete_variational_quantum_circuit_function)
+    
+    complete_weight_matrix: torch tensor of size (number_of_layer,number_of_wires,3)
+    
+    dev: pennylane quantum device
+    """
     def __init__(self,qvc,complete_weight_matrix:torch.Tensor,dev):
         """
+
         complete_weight_matrix: torch tensor of size (number_of_layer,number_of_wires,3)
         qvc: quantum function ( should have the same inputs as complete_variational_quantum_circuit_function)
         """
@@ -71,6 +119,11 @@ class complete_quantum_variational_circuit(torch.nn.Module):
         self.weights = torch.nn.Parameter(complete_weight_matrix)
 
     def build_qnode(self):
+        """
+        Function to build a qnode for the quantum circuit. 
+        This also takes into account the encoding of the input (Angle encoding).
+        Note that the circuit function inside takes "input_vector" as an input.
+        """
         # dev = 
         @qp.qnode(device = self.device, interface="torch")
         def circuit(input_vector):
@@ -91,16 +144,25 @@ class complete_quantum_variational_circuit(torch.nn.Module):
         return circuit
 
     def draw_quantum_circuit(self, input_vector:torch.Tensor):
+        """
+        Function used to draw the complete quantum circuit
+        """
         circuit = self.build_qnode()
 
         print(qp.draw(circuit)(input_vector))
         
         qp.draw_mpl(qnode=circuit,style = "pennylane")(input_vector)
-        plt.show()
+        plt.show(block=False)
+        plt.pause(3)
+        plt.close()
+        # plt.show()
 
         return 
     
     def forward(self, input_vector:torch.Tensor):
+        """
+        Forward function of the neural network
+        """
         circuit = self.build_qnode()
         # print(qp.draw(circuit)(input_vector))
         
