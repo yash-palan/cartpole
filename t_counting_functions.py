@@ -44,49 +44,14 @@ complete_weight_matrix = network.quantum_variational_circuit.weights
 trained_circuit= qp.QNode(complete_variational_quantum_circuit_function ,device=dev, interface="torch")
 
 # Decompose into Clifford+T
-epsilon = 1e-3  # your choice of approximation precision — report this!
+
+epsilon = 1e-3  
 clifford_t_qnode = qp.clifford_t_decomposition(trained_circuit, epsilon=epsilon)
 
-trained_params = complete_weight_matrix  # your optimized parameters
+trained_params = complete_weight_matrix 
 # clifford_t_qnode
 with qp.Tracker(dev) as tracker:
     clifford_t_qnode(trained_params)
 
 resources_lst = tracker.history["resources"]
 print(resources_lst[0])
-
-# Run it once to build the tape (needed to inspect gates)
-# tape = qp.workflow.construct_tape(clifford_t_qnode)(trained_params)
-
-# from collections import Counter
-
-# gate_counts = Counter(op.name for op in tape.operations)
-# t_count = gate_counts.get("T", 0) + gate_counts.get("Adjoint(T)", 0)
-# print(gate_counts)
-# print("T-count:", t_count)
-
-# # Build a DAG-based depth count restricted to T/T-dagger gates
-# from pennylane.tape import QuantumScript
-
-# def t_depth(tape):
-#     # crude layering: greedily assign each op to the earliest layer where its wires are free
-#     wire_available_at = {w: 0 for w in tape.wires}
-#     max_depth = 0
-#     count = 0
-#     for op in tape.operations:
-#         # print(count)
-#         # if(count == 1997):
-#         #     print("hello")
-#         if(len(op.wires)==0):
-#             continue
-#         start = max(wire_available_at[w] for w in op.wires)
-#         is_t = op.name in ("T", "Adjoint(T)")
-#         end = start + 1
-#         for w in op.wires:
-#             wire_available_at[w] = end
-#         if is_t:
-#             max_depth = max(max_depth, end)
-#         count = count+1
-#     return max_depth
-
-# print("T-depth (upper bound):", t_depth(tape))
