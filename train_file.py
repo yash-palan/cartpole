@@ -60,7 +60,7 @@ def creating_network(input_clip_learning_network,qvc_network,understanding_qvc_n
     return network
 #################################
 #################################
-def initializing_qvc(number_of_layers,number_of_wires,quantum_function):
+def initializing_qvc(number_of_layers,number_of_wires,quantum_function,device_name):
     """
     This function just initializes the quantum variational circuit 
 
@@ -74,9 +74,8 @@ def initializing_qvc(number_of_layers,number_of_wires,quantum_function):
     """
     
     complete_weight_matrix = torch.rand(size=(number_of_layers,number_of_wires,3) ,dtype=torch.float32)
-    # input_vector = torch.tensor([[0.1,0.2,0.3,0.4]],dtype=torch.float32)
 
-    dev = qp.device('default.qubit',wires = number_of_wires)
+    dev = qp.device(device_name,wires = number_of_wires)
     # qvc_func = complete_variational_quantum_circuit_function
 
 
@@ -204,9 +203,10 @@ def training_loop(env,config:dict,activation_map:dict, betas=(0.9, 0.999)):
     
     # Creating the quantum variational circuit
     if(config["qvc_network"] is not None):    
-        qvc_network = initializing_qvc(number_of_layers=config["qvc_network"]["number_of_layers"],
-                                        number_of_wires=config["qvc_network"]["number_of_wires"],
-                                        quantum_function=qcc.complete_variational_quantum_circuit_function)
+        qvc_network = initializing_qvc(number_of_layers=config["qvc_network"]["number_of_layers"]
+                                       ,number_of_wires=config["qvc_network"]["number_of_wires"]
+                                       ,quantum_function=qcc.complete_variational_quantum_circuit_function)
+        
         # Plotting the qvc
         random_input_vector = torch.rand(size=(1,number_wires))
         qvc_network.draw_quantum_circuit(input_vector=random_input_vector)
@@ -350,49 +350,50 @@ if __name__=="__main__":
 
     for seed in range(5):
         print(f"\nStarted seed:{seed}")
+        config = {
+            "input_clip_learning_network":
+            {
+                "layer_geometry":[int(state_size),int(number_wires)],
+                "activation_functions":["Tanh"] 
+            },
+            
+            "qvc_network":
+            {
+                "number_of_layers":number_layers,
+                "number_of_wires":number_wires,
+            },
+
+            "understanding_qvc_network":
+            {
+                "layer_geometry":[int(number_wires),64,int(action_size)],
+                "activation_functions":["ReLU","Identity"]
+            },
+            "seed":int(seed),  
+            "number_of_episodes":num_episodes,
+            "number_of_timesteps":num_timesteps,
+            "buffer_size":buffer_size,
+            "complete_path":complete_path,
+            "device_name":'lightning.qubit'
+        }
+
         # config = {
         #     "input_clip_learning_network":
         #     {
-        #         "layer_geometry":[int(state_size),int(number_wires)],
-        #         "activation_functions":["Tanh"] 
+        #         # "layer_geometry":[int(state_size),int(number_wires)]
+        #         "layer_geometry":[int(state_size),int(number_wires),int(number_wires),64,int(action_size)],
+        #         # "activation_functions":["Tanh"] 
+        #         "activation_functions":["ReLU","ReLU","ReLU","Identity"] 
         #     },
             
-        #     "qvc_network":
-        #     {
-        #         "number_of_layers":number_layers,
-        #         "number_of_wires":number_wires,
-        #     },
+        #     "qvc_network":None,
 
-        #     "understanding_qvc_network":
-        #     {
-        #         "layer_geometry":[int(number_wires),64,int(action_size)],
-        #         "activation_functions":["ReLU","Identity"]
-        #     },
+        #     "understanding_qvc_network":None,
         #     "seed":int(seed),  
         #     "number_of_episodes":num_episodes,
         #     "number_of_timesteps":num_timesteps,
         #     "buffer_size":buffer_size,
         #     "complete_path":complete_path
         # }
-
-        config = {
-            "input_clip_learning_network":
-            {
-                # "layer_geometry":[int(state_size),int(number_wires)]
-                "layer_geometry":[int(state_size),int(number_wires),int(number_wires),64,int(action_size)],
-                # "activation_functions":["Tanh"] 
-                "activation_functions":["ReLU","ReLU","ReLU","Identity"] 
-            },
-            
-            "qvc_network":None,
-
-            "understanding_qvc_network":None,
-            "seed":int(seed),  
-            "number_of_episodes":num_episodes,
-            "number_of_timesteps":num_timesteps,
-            "buffer_size":buffer_size,
-            "complete_path":complete_path
-        }
 
         activation_map = {
             "ReLU": nn.ReLU,
