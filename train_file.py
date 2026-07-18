@@ -353,49 +353,49 @@ if __name__=="__main__":
 
     for seed in range(start,end,step):
         print(f"\nStarted seed:{seed}")
-        # config = {
-        #     "input_clip_learning_network":
-        #     {
-        #         "layer_geometry":[int(state_size),int(number_wires)],
-        #         "activation_functions":["Tanh"] 
-        #     },
-            
-        #     "qvc_network":
-        #     {
-        #         "number_of_layers":number_layers,
-        #         "number_of_wires":number_wires,
-        #     },
-
-        #     "understanding_qvc_network":
-        #     {
-        #         "layer_geometry":[int(number_wires),64,int(action_size)],
-        #         "activation_functions":["ReLU","Identity"]
-        #     },
-        #     "seed":int(seed),  
-        #     "number_of_episodes":num_episodes,
-        #     "number_of_timesteps":num_timesteps,
-        #     "buffer_size":buffer_size,
-        #     "complete_path":complete_path
-        # }
-
         config = {
             "input_clip_learning_network":
             {
-                # "layer_geometry":[int(state_size),int(number_wires)]
-                "layer_geometry":[int(state_size),int(number_wires),int(number_wires),64,int(action_size)],
-                # "activation_functions":["Tanh"] 
-                "activation_functions":["ReLU","ReLU","ReLU","Identity"] 
+                "layer_geometry":[int(state_size),int(number_wires)],
+                "activation_functions":["Tanh"] 
             },
             
-            "qvc_network":None,
+            "qvc_network":
+            {
+                "number_of_layers":number_layers,
+                "number_of_wires":number_wires,
+            },
 
-            "understanding_qvc_network":None,
+            "understanding_qvc_network":
+            {
+                "layer_geometry":[int(number_wires),64,int(action_size)],
+                "activation_functions":["ReLU","Identity"]
+            },
             "seed":int(seed),  
             "number_of_episodes":num_episodes,
             "number_of_timesteps":num_timesteps,
             "buffer_size":buffer_size,
             "complete_path":complete_path
         }
+
+        # config = {
+        #     "input_clip_learning_network":
+        #     {
+        #         # "layer_geometry":[int(state_size),int(number_wires)]
+        #         "layer_geometry":[int(state_size),int(number_wires),int(number_wires),64,int(action_size)],
+        #         # "activation_functions":["Tanh"] 
+        #         "activation_functions":["ReLU","ReLU","ReLU","Identity"] 
+        #     },
+            
+        #     "qvc_network":None,
+
+        #     "understanding_qvc_network":None,
+        #     "seed":int(seed),  
+        #     "number_of_episodes":num_episodes,
+        #     "number_of_timesteps":num_timesteps,
+        #     "buffer_size":buffer_size,
+        #     "complete_path":complete_path
+        # }
 
         activation_map = {
             "ReLU": nn.ReLU,
