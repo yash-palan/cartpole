@@ -343,12 +343,15 @@ if __name__=="__main__":
     number_wires = 2
     number_layers = 2
 
+    start = 10
+    end =  15
+    step = 1
 
     # seed = 5142
     base_path = os.getcwd()
     complete_path = base_path + '/results/'
 
-    for seed in range(5):
+    for seed in range(start,end,step):
         print(f"\nStarted seed:{seed}")
         # config = {
         #     "input_clip_learning_network":
