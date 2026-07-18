@@ -78,7 +78,6 @@ def initializing_qvc(number_of_layers,number_of_wires,quantum_function,device_na
     dev = qp.device(device_name,wires = number_of_wires)
     # qvc_func = complete_variational_quantum_circuit_function
 
-
     qvc_object = qcc.complete_quantum_variational_circuit(qvc = quantum_function,
                                                           complete_weight_matrix=complete_weight_matrix,
                                                           dev = dev)
