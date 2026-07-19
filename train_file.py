@@ -76,7 +76,6 @@ def initializing_qvc(number_of_layers,number_of_wires,quantum_function,device_na
     complete_weight_matrix = torch.rand(size=(number_of_layers,number_of_wires,3) ,dtype=torch.float32)
 
     dev = qp.device(device_name,wires = number_of_wires)
-    # qvc_func = complete_variational_quantum_circuit_function
 
     qvc_object = qcc.complete_quantum_variational_circuit(qvc = quantum_function,
                                                           complete_weight_matrix=complete_weight_matrix,
@@ -192,7 +191,8 @@ def training_loop(env,config:dict,activation_map:dict, betas=(0.9, 0.999)):
 
     # Creating the head
     if(config["input_clip_learning_network"] is not None):
-        input_clip_learning_network = chc.neural_net(layer_geometry=torch.tensor(config["input_clip_learning_network"]["layer_geometry"],dtype=torch.int),
+        input_clip_learning_network = chc.neural_net(
+                                                    layer_geometry=torch.tensor(config["input_clip_learning_network"]["layer_geometry"],dtype=torch.int),
                                                     activation_functions=nn.ModuleList(
                                                     activation_map[name]() for name in config["input_clip_learning_network"]["activation_functions"]
                                                         )
@@ -204,7 +204,8 @@ def training_loop(env,config:dict,activation_map:dict, betas=(0.9, 0.999)):
     if(config["qvc_network"] is not None):    
         qvc_network = initializing_qvc(number_of_layers=config["qvc_network"]["number_of_layers"]
                                        ,number_of_wires=config["qvc_network"]["number_of_wires"]
-                                       ,quantum_function=qcc.complete_variational_quantum_circuit_function)
+                                       ,quantum_function=qcc.complete_variational_quantum_circuit_function
+                                       ,device_name=config["device_name"])
         
         # Plotting the qvc
         random_input_vector = torch.rand(size=(1,number_wires))
@@ -372,7 +373,7 @@ if __name__=="__main__":
             "number_of_timesteps":num_timesteps,
             "buffer_size":buffer_size,
             "complete_path":complete_path,
-            "device_name":'lightning.qubit'
+            "device_name":'default.qubit'
         }
 
         # config = {
@@ -403,8 +404,8 @@ if __name__=="__main__":
         }
 
 
-        with open(complete_path+f"config_{seed}.json", "w") as f:
-            json.dump(config, f, indent=4)
+        # with open(complete_path+f"config_{seed}.json", "w") as f:
+        #     json.dump(config, f, indent=4)
 
         training_loop(env,config,activation_map)
 

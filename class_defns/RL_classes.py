@@ -5,7 +5,7 @@ import class_defns.quantum_circuit_classes as qcc
 import numpy as np
 import copy
 # import gymnasium as gym
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 #################################
 #################################
 class agent_brain(nn.Module):
@@ -221,7 +221,7 @@ class DQN_agent:
         """
         Function to update the weights of the target_network
         """
-        
+
         self.target_network.load_state_dict(self.main_network.state_dict())
         # self.target_network = copy.deepcopy(self.main_network)
 
