@@ -32,6 +32,22 @@ class agent_brain(nn.Module):
         self.quantum_variational_circuit = qvc
         self.understanding_qvc = understanding_qvc_nn
 
+    def clone_network(self):
+        cloned_input_clip_learning = copy.deepcopy(self.input_clip_learning)
+        cloned_understanding_qvc = copy.deepcopy(self.understanding_qvc)
+
+        # Just to account for the None case of teh qunatum variational circuit
+        if self.quantum_variational_circuit is None:
+            cloned_quantum_variational_circuit = None
+        else:
+            cloned_quantum_variational_circuit = self.quantum_variational_circuit.clone_complete_quantum_variational_circuit()
+
+        return(
+                agent_brain(input_clip_learning=cloned_input_clip_learning
+                           ,qvc = cloned_quantum_variational_circuit
+                           ,understanding_qvc_nn = cloned_understanding_qvc)
+                )
+    
     def checks(self):
         """
         Here I just check if the patching of the three is actually correct, as in the 
@@ -188,9 +204,11 @@ class DQN_agent:
 
 
         # Creating a frozen target network
-        self.target_network = copy.deepcopy(network)
+        # self.target_network = copy.deepcopy(network)
+        self.target_network = network.clone_network()
         self.freezing_target_network()
         self.update_target_network()
+
 
     def freezing_target_network(self):
         """
@@ -203,8 +221,9 @@ class DQN_agent:
         """
         Function to update the weights of the target_network
         """
-        # self.target_network.load_state_dict(self.main_network.state_dict())
-        self.target_network = copy.deepcopy(self.main_network)
+        
+        self.target_network.load_state_dict(self.main_network.state_dict())
+        # self.target_network = copy.deepcopy(self.main_network)
 
     def epsilon_greedy_strategy(self,state:torch.Tensor):
         """

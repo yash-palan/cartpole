@@ -115,8 +115,10 @@ class complete_quantum_variational_circuit(torch.nn.Module):
         self.device = dev
         self.number_of_layers = complete_weight_matrix.shape[0]
         self.number_of_wires =  complete_weight_matrix.shape[1]
-        # self.weights = complete_weight_matrix
         self.weights = torch.nn.Parameter(complete_weight_matrix)
+
+        self._device_name = dev.short_name if hasattr(dev, "short_name") else dev.name
+        self._device_kwargs = {"wires":self.number_of_wires}
 
     def build_qnode(self):
         """
@@ -124,24 +126,25 @@ class complete_quantum_variational_circuit(torch.nn.Module):
         This also takes into account the encoding of the input (Angle encoding).
         Note that the circuit function inside takes "input_vector" as an input.
         """
-        # dev = 
+
         @qp.qnode(device = self.device, interface="torch")
         def circuit(input_vector):
             # --- state preparation ---
             qp.AngleEmbedding(input_vector*torch.pi, wires=range(self.number_of_wires))
-            # trial_input_vector = input_vector*torch.pi
-            # qp.AngleEmbedding(trial_input_vector, wires=range(self.number_of_wires))
 
             qp.Barrier(wires=range(self.number_of_wires))
             # --- variational circuit ---
-            # return(self.qvc(input_vector = angle_embeddings,
-            #                 complete_weight_matrix= self.weights,
-            #                 number_of_layer=self.number_of_layers))
             final_result = self.qvc(input_vector = input_vector,
                                 complete_weight_matrix= self.weights)
             return(final_result)
         
         return circuit
+
+    def clone_complete_quantum_variational_circuit(self):
+        new_complete_weight_matrix = torch.empty_like(self.weights)
+        new_qvc = self.qvc
+        new_dev = qp.device(self._device_name,**self._device_kwargs)
+        return(complete_quantum_variational_circuit(qvc = new_qvc,complete_weight_matrix=new_complete_weight_matrix,dev = new_dev))
 
     def draw_quantum_circuit(self, input_vector:torch.Tensor):
         """
@@ -164,7 +167,6 @@ class complete_quantum_variational_circuit(torch.nn.Module):
         Forward function of the neural network
         """
         circuit = self.build_qnode()
-        # print(qp.draw(circuit)(input_vector))
         
         # We need to concatenate so that the computational graph is not broken
         # Also, the dtype is wrong (it is float64) which we need to convert to 
