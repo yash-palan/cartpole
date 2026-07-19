@@ -404,8 +404,8 @@ if __name__=="__main__":
         }
 
 
-        # with open(complete_path+f"config_{seed}.json", "w") as f:
-        #     json.dump(config, f, indent=4)
+        with open(complete_path+f"config_{seed}.json", "w") as f:
+            json.dump(config, f, indent=4)
 
         training_loop(env,config,activation_map)
 
