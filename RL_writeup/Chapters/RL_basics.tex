@@ -1,0 +1,121 @@
+%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%
+\chapter{RL basics}
+%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%
+\par
+Reinforcement Learning (RL) is one the most common techniques used in modern day artificial intelligence (AI). However, it is  which is far away from standard machine learning techniques, partially since it solves a completely different problem. The aim of this writeup is to give a brief summary / crash course to the readers on the same, by introducing the basic mathematical notation, as well the latest algorithms, without going into too much depth, that a course would take but still giving the necessary pre-requisites to understand papers and how to code based on those papers. 
+%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%
+\section{Problem Setup for ML}
+%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%
+The problem that RL tries to solve is generaly that of navigation of an agent in an unknown external enviornment, so basically an agent who interacts with the enviornment and learns to take a particular action based on information that it receives from the environment. However, this can happen in multiple diffrent ways, which is taked abot more in the standard RL literature. Here, we just focus on setting up the notation that is used in the literature.\\
+\par
+\textbf{Problem:} Consider the example of an agent (say a robot) who is interacting with the environmentm, which maybe be modelled using some model. The agent can stay in some of the states of the environment $s \in \mathds{S}$ ($\mathds{S}$ is the set o fall possible states), and choose to take an action $a$ from all possible actions  $\mathds{A}$, to switch to another state. Once an action has been taken, the agent receives a \textit{feedback/reward} $r \in \mathds{R}$ from the enviornment.\\
+\par
+{\color{red}\textbf{Goal:} The goal of the agent is to maximi the reward.}
+\\
+Now, having introduced the basic problem, we introduce some definitions
+\begin{tcolorbox}[title = Definitions, breakable=true]
+    \begin{enumerate}
+        \item \textbf{Value function} $V(s)$: This represents the expected total (including future) rewards the agent can get by being in a state $s$. So it is basically the value of the state $s$. Answers the question \textit{``How good is it to be in this state?''}.
+        \item \textbf{Q function} $Q(a,s)$: This represents the expected total (including future) rewards the agent can get by taking action $a$ when in state $s$.
+        \item \textbf{Policy} $\pi_{\theta}(s)$:
+        \begin{itemize}
+            \item A strategy or rulebook used in reinforcement learning that maps environmental states to specific actions and helps in selection of the best action from a given state. 
+            \item Can be Stochastic ($P(a|s)$, probability distribution) of deterministic ($f(a,s)$ deterministic function or lookup table).
+        \end{itemize} 
+        \item \textbf{Episode:} This refers to the sequence of state and action pair that the agent takes with time, eg. $s_0,a_1,s_1,a_2,s_2,\ldots,a_T,s_T$. This is also called a \textit{trial o trajectory}.
+        \item \textbf{Model-based:} Rely on the model of the environment; either the model is known or the algorithm learns it explicitly.
+        \item \textbf{Model-free:} No dependency on the model during learning.
+        \item \textbf{On-policy:} Use the deterministic outcomes or samples from the target policy to train the algorithm.
+        \item \textbf{Off-policy:} Training on a distribution of transitions or episodes produced by a different behavior policy rather than that produced by the target policy.
+    \end{enumerate}
+
+\end{tcolorbox}
+
+%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%
+\section{Mathematical definitions}
+%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%
+\begin{enumerate}
+    \item \textbf{Future Rewards} from time $t$,
+    \begin{align}
+        G_{t} = \sum^{\infty}_{k=0} \gamma^{k} R_{t+k+1} 
+    \end{align}
+    where $\gamma$ is the decay factor for future rewards.
+    \item \textbf{Value function:}
+    \begin{align}
+        V^{\pi}(s) &= \mathds{E}_{\pi}\left[ G_{t}|S_t = s  \right] = \mathds{E}_{\pi}\left[ G_{0}|S_0 = s  \right] 
+    \end{align}
+    Note that by $\mathds{E}_{\pi}$, we just mean that the whole average is done with policy $\pi$ (as in the action selection). As an example, one can expand the above as 
+    \begin{align}
+        V^{\pi}(s) &= \mathds{E}_{\pi}\left[ \sum_{k=0} \gamma^{k+1} R_{t+k+1}  |S_t = s  \right] \\
+        &= \mathds{E}_{\pi}\left[ R_{t+1} +  \gamma \sum_{k=0} \gamma^{k} R_{t+k+2}  |S_t = s  \right]\\
+        &= \sum_{a} \pi(a|s) \sum_{a',s'} p(a',s'|a,s) r_{a'} +   \sum_{a} \pi(a|s) \sum_{a',s'} p(a',s'|a,s) 
+        \gamma \mathds{E}_{\pi}\left[ \sum_{k=0} \gamma^{k} R_{t+k+2}  |S_{t+1} = s'  \right] \\
+        &= \sum_{a} \pi(a|s) \sum_{a',s'} p(a',s'|a,s) r_{a'} + \sum_{a} \pi(a|s) \sum_{a',s'} p(a',s'|a,s) 
+        \gamma \mathds{E}_{\pi}\left[ \sum_{k=0} \gamma^{k} R_{t'+k+1}  |S_{t'} = s'  \right]
+    \end{align}
+    Remember that by the definition of the Value function 
+    \begin{align}
+        V^{\pi}(s') &= \mathds{E}_{\pi}\left[ G_{t'}|S_{t'} = s'  \right], 
+    \end{align}
+    thus we get that 
+    \begin{align}\label{eq:value_function_Bellmann_equation}
+        V^{\pi}(s) &= \sum_{a} \pi(a|s) \sum_{a',s'} p(a',s'|a,s) \left[r_{a'} + \gamma V^{\pi}(s')\right].
+    \end{align}
+    \item \textbf{Q function:} In a similar fashion as the value function, we can define the Q function as 
+     \begin{align}
+        Q^{\pi}(s) &= \mathds{E}_{\pi}\left[ G_{t}|S_t = s, A_t = a \right] = \mathds{E}_{\pi}\left[ G_{0}|S_0 = s, A_0 = a \right]. 
+    \end{align}
+    Similarly, as before, we can write 
+    \begin{align}
+        Q^{\pi}(s) &= \mathds{E}_{\pi}\left[ \sum_{k=0} \gamma^{k+1} R_{t+k+1}  |S_t = s, A_t = a \right] \\
+        &= \mathds{E}_{\pi}\left[ R_{t+1} +  \gamma \sum_{k=0} \gamma^{k} R_{t+k+2}  |S_t = s,A_t = a \right]\\
+        &= \sum_{a',s'} p(a',s'|a,s) r_{a'} + \sum_{a',s'} p(s',a'|s,a) 
+        \gamma \mathds{E}_{\pi}\left[ \sum_{k=0} \gamma^{k} R_{t+k+2}  |S_{t+1} = s', A_{t+1} = a' \right] \\
+        &=  \sum_{a',s'} p(a',s'|a,s) r_{a'} + \sum_{a',s'} p(a',s'|a,s) 
+        \gamma \mathds{E}_{\pi}\left[ \sum_{k=0} \gamma^{k} R_{t'+k+1}  |S_{t'} = s', A_{t'} = a' \right] \\
+        &= \sum_{a',s'} p(a',s'|a,s)\left[ r_{a'} + \gamma Q^{\pi}(s',a') \right]  \label{eq:Bellman_eqn_for_Q_function_v1}
+    \end{align}
+    It is easy to note that 
+    \begin{align}
+        p(s',a'|s,a) = p(s'|s,a)\pi(a'|s'),
+    \end{align}
+    to get us that 
+    \begin{align}
+        Q^{\pi}(s) &= \sum_{a',s'} p(s'|s,a)\pi(a'|s')\left[ r_{a'} + \gamma Q^{\pi}(s',a') \right] \\
+        &=\sum_{s'} p(s'|s,a)\left[\sum_{a'}\pi(a'|s') r_{a'} + \sum_{a'}\pi(a'|s') \gamma Q^{\pi}(s',a') \right]
+    \end{align}
+    Using the fact that 
+    \begin{align}
+        V^{\pi}(s) = \sum_{a'}\pi(a'|s')Q^{\pi}(s',a') 
+    \end{align}
+    and defining the total reward for a state as 
+    \begin{align}
+        r_s = \sum_{a'} r_{a'} \pi(a'|s')
+    \end{align}
+    we can rewrite the above equation as
+    \begin{align}\label{eq:Bellman_eqn_for_Q_function_v2}
+        Q^{\pi}(s) &= \sum_{a',s'} p(s'|s,a)\pi(a'|s')\left[ r_{a'} + \gamma Q^{\pi}(s',a') \right] \\
+        &=\sum_{s'} p(s'|s,a)\left[r_{s'} +  \gamma V^{\pi}(s') \right].
+    \end{align}
+    Note that there is an abuse of notation for $r$ where we assume that the subscript informs us of what it actually means. The above equation is the \textbf{Bellmann equation for the Q function}.
+    \item \textbf{Weng's transition kernel} ($P(s',r|s,a)$): Probability that we go from state-action $s,a$ to state $s'$ with reward $r$. Note that 
+    \begin{align}
+        \sum_{r} P(s',r|s,a) = p(s'|s,a) 
+    \end{align}
+    Using the above, we can rewrite the Bellmann's equation for the $Q$ function as 
+    \begin{align}\label{eq:Bellman_eqn_for_Q_function_v3}
+        Q^{\pi}(s) &=\sum_{s',r} P(s',r|s,a)\left[r + \gamma V^{\pi}(s') \right] 
+    \end{align}
+\end{enumerate}
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%

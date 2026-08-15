@@ -1,0 +1,273 @@
+% $ biblatex auxiliary file $
+% $ biblatex bbl format version 3.3 $
+% Do not modify the above lines!
+%
+% This is an auxiliary file used by the 'biblatex' package.
+% This file may safely be deleted. It will be recreated by
+% biber as required.
+%
+\begingroup
+\makeatletter
+\@ifundefined{ver@biblatex.sty}
+  {\@latex@error
+     {Missing 'biblatex' package}
+     {The bibliography requires the 'biblatex' package.}
+      \aftergroup\endinput}
+  {}
+\endgroup
+
+
+\refsection{0}
+  \datalist[entry]{none/global//global/global/global}
+    \entry{lilianwengPolicyGradient}{misc}{}{}
+      \name{author}{1}{}{%
+        {{hash=49d03d499031db786a0e61119024cf5a}{%
+           family={Weng},
+           familyi={W\bibinitperiod},
+           given={Lilian},
+           giveni={L\bibinitperiod}}}%
+      }
+      \strng{namehash}{49d03d499031db786a0e61119024cf5a}
+      \strng{fullhash}{49d03d499031db786a0e61119024cf5a}
+      \strng{fullhashraw}{49d03d499031db786a0e61119024cf5a}
+      \strng{bibnamehash}{49d03d499031db786a0e61119024cf5a}
+      \strng{authorbibnamehash}{49d03d499031db786a0e61119024cf5a}
+      \strng{authornamehash}{49d03d499031db786a0e61119024cf5a}
+      \strng{authorfullhash}{49d03d499031db786a0e61119024cf5a}
+      \strng{authorfullhashraw}{49d03d499031db786a0e61119024cf5a}
+      \field{sortinit}{1}
+      \field{sortinithash}{4f6aaa89bab872aa0999fec09ff8e98a}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{howpublished}{\url{https://lilianweng.github.io/posts/2018-04-08-policy-gradient/\#dpg}}
+      \field{note}{[Accessed 08-08-2026]}
+      \field{title}{{P}olicy {G}radient {A}lgorithms --- lilianweng.github.io}
+    \endentry
+    \entry{Sutton:Intro_to_RL_second_ed}{book}{}{}
+      \name{author}{2}{}{%
+        {{hash=eb920e5277d3d5fd0903f3cd41e11871}{%
+           family={Sutton},
+           familyi={S\bibinitperiod},
+           given={Richard\bibnamedelima S.},
+           giveni={R\bibinitperiod\bibinitdelim S\bibinitperiod}}}%
+        {{hash=32a0a208f8bcf56a13b0a8e618aa806a}{%
+           family={Barto},
+           familyi={B\bibinitperiod},
+           given={Andrew\bibnamedelima G.},
+           giveni={A\bibinitperiod\bibinitdelim G\bibinitperiod}}}%
+      }
+      \list{publisher}{1}{%
+        {The MIT Press}%
+      }
+      \strng{namehash}{c6212f1a1407d96a3d9f4fefbb07eade}
+      \strng{fullhash}{c6212f1a1407d96a3d9f4fefbb07eade}
+      \strng{fullhashraw}{c6212f1a1407d96a3d9f4fefbb07eade}
+      \strng{bibnamehash}{c6212f1a1407d96a3d9f4fefbb07eade}
+      \strng{authorbibnamehash}{c6212f1a1407d96a3d9f4fefbb07eade}
+      \strng{authornamehash}{c6212f1a1407d96a3d9f4fefbb07eade}
+      \strng{authorfullhash}{c6212f1a1407d96a3d9f4fefbb07eade}
+      \strng{authorfullhashraw}{c6212f1a1407d96a3d9f4fefbb07eade}
+      \field{sortinit}{1}
+      \field{sortinithash}{4f6aaa89bab872aa0999fec09ff8e98a}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{edition}{Second}
+      \field{title}{Reinforcement Learning: An Introduction}
+      \field{year}{2018}
+      \verb{urlraw}
+      \verb http://incompleteideas.net/book/the-book-2nd.html
+      \endverb
+      \verb{url}
+      \verb http://incompleteideas.net/book/the-book-2nd.html
+      \endverb
+    \endentry
+    \entry{wiki:Policy_gradient_method}{misc}{}{}
+      \name{author}{1}{}{%
+        {{hash=9c677286866aad38f8e9b660f5411814}{%
+           family={Wikipedia},
+           familyi={W\bibinitperiod}}}%
+      }
+      \strng{namehash}{9c677286866aad38f8e9b660f5411814}
+      \strng{fullhash}{9c677286866aad38f8e9b660f5411814}
+      \strng{fullhashraw}{9c677286866aad38f8e9b660f5411814}
+      \strng{bibnamehash}{9c677286866aad38f8e9b660f5411814}
+      \strng{authorbibnamehash}{9c677286866aad38f8e9b660f5411814}
+      \strng{authornamehash}{9c677286866aad38f8e9b660f5411814}
+      \strng{authorfullhash}{9c677286866aad38f8e9b660f5411814}
+      \strng{authorfullhashraw}{9c677286866aad38f8e9b660f5411814}
+      \field{extraname}{1}
+      \field{sortinit}{2}
+      \field{sortinithash}{8b555b3791beccb63322c22f3320aa9a}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{howpublished}{\url{http://en.wikipedia.org/w/index.php?title=Policy\%20gradient\%20method&oldid=1358016730}}
+      \field{note}{[Online; accessed 09-August-2026]}
+      \field{title}{{Policy gradient method} --- {W}ikipedia{,} The Free Encyclopedia}
+      \field{year}{2026}
+    \endentry
+    \entry{daniel_takeshi:RL_GoingDeeper}{misc}{}{}
+      \field{sortinit}{4}
+      \field{sortinithash}{9381316451d1b9788675a07e972a12a7}
+      \field{labeltitlesource}{title}
+      \field{howpublished}{\url{https://danieltakeshi.github.io/2017/03/28/going-deeper-into-reinforcement-learning-fundamentals-of-policy-gradients/}}
+      \field{note}{[Accessed 08-08-2026]}
+      \field{title}{{G}oing {D}eeper {I}nto {R}einforcement {L}earning: {F}undamentals of {P}olicy {G}radients --- danieltakeshi.github.io}
+    \endentry
+    \entry{wiki:Actor-critic_algorithm}{misc}{}{}
+      \name{author}{1}{}{%
+        {{hash=9c677286866aad38f8e9b660f5411814}{%
+           family={Wikipedia},
+           familyi={W\bibinitperiod}}}%
+      }
+      \strng{namehash}{9c677286866aad38f8e9b660f5411814}
+      \strng{fullhash}{9c677286866aad38f8e9b660f5411814}
+      \strng{fullhashraw}{9c677286866aad38f8e9b660f5411814}
+      \strng{bibnamehash}{9c677286866aad38f8e9b660f5411814}
+      \strng{authorbibnamehash}{9c677286866aad38f8e9b660f5411814}
+      \strng{authornamehash}{9c677286866aad38f8e9b660f5411814}
+      \strng{authorfullhash}{9c677286866aad38f8e9b660f5411814}
+      \strng{authorfullhashraw}{9c677286866aad38f8e9b660f5411814}
+      \field{extraname}{2}
+      \field{sortinit}{6}
+      \field{sortinithash}{b33bc299efb3c36abec520a4c896a66d}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{howpublished}{\url{http://en.wikipedia.org/w/index.php?title=Actor-critic\%20algorithm&oldid=1348373706}}
+      \field{note}{[Online; accessed 09-August-2026]}
+      \field{title}{{Actor-critic algorithm} --- {W}ikipedia{,} The Free Encyclopedia}
+      \field{year}{2026}
+    \endentry
+    \entry{degris_2013:offpolicyactorcritic}{misc}{}{}
+      \name{author}{3}{}{%
+        {{hash=6598b6ed3c197bb4292561d14d01436f}{%
+           family={Degris},
+           familyi={D\bibinitperiod},
+           given={Thomas},
+           giveni={T\bibinitperiod}}}%
+        {{hash=a25db29c9968a07dda336d0bb03de3da}{%
+           family={White},
+           familyi={W\bibinitperiod},
+           given={Martha},
+           giveni={M\bibinitperiod}}}%
+        {{hash=eb920e5277d3d5fd0903f3cd41e11871}{%
+           family={Sutton},
+           familyi={S\bibinitperiod},
+           given={Richard\bibnamedelima S.},
+           giveni={R\bibinitperiod\bibinitdelim S\bibinitperiod}}}%
+      }
+      \strng{namehash}{3796ee8b4a6acdcc258f869dc3528595}
+      \strng{fullhash}{3796ee8b4a6acdcc258f869dc3528595}
+      \strng{fullhashraw}{3796ee8b4a6acdcc258f869dc3528595}
+      \strng{bibnamehash}{3796ee8b4a6acdcc258f869dc3528595}
+      \strng{authorbibnamehash}{3796ee8b4a6acdcc258f869dc3528595}
+      \strng{authornamehash}{3796ee8b4a6acdcc258f869dc3528595}
+      \strng{authorfullhash}{3796ee8b4a6acdcc258f869dc3528595}
+      \strng{authorfullhashraw}{3796ee8b4a6acdcc258f869dc3528595}
+      \field{sortinit}{1}
+      \field{sortinithash}{4f6aaa89bab872aa0999fec09ff8e98a}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{eprintclass}{cs.LG}
+      \field{eprinttype}{arXiv}
+      \field{title}{Off-Policy Actor-Critic}
+      \field{year}{2013}
+      \verb{eprint}
+      \verb 1205.4839
+      \endverb
+      \verb{urlraw}
+      \verb https://arxiv.org/abs/1205.4839
+      \endverb
+      \verb{url}
+      \verb https://arxiv.org/abs/1205.4839
+      \endverb
+    \endentry
+    \entry{schulman_2017:proximal_policy_optimization_algorithms}{misc}{}{}
+      \name{author}{5}{}{%
+        {{hash=3e09bd2a25d237ebdaed560a07c0451e}{%
+           family={Schulman},
+           familyi={S\bibinitperiod},
+           given={John},
+           giveni={J\bibinitperiod}}}%
+        {{hash=674ede0b9cd02a2bf5fc662972efb9f0}{%
+           family={Wolski},
+           familyi={W\bibinitperiod},
+           given={Filip},
+           giveni={F\bibinitperiod}}}%
+        {{hash=4164e43d8cf919f5e3f8d80f5ea23f36}{%
+           family={Dhariwal},
+           familyi={D\bibinitperiod},
+           given={Prafulla},
+           giveni={P\bibinitperiod}}}%
+        {{hash=a812c46caad94fc8701be37871f303ba}{%
+           family={Radford},
+           familyi={R\bibinitperiod},
+           given={Alec},
+           giveni={A\bibinitperiod}}}%
+        {{hash=be38507da6ab98e7ac01ac2c6b7e13eb}{%
+           family={Klimov},
+           familyi={K\bibinitperiod},
+           given={Oleg},
+           giveni={O\bibinitperiod}}}%
+      }
+      \strng{namehash}{8d6613ae59595910252a86a61babf6c8}
+      \strng{fullhash}{a6c6ed5a5aeb74e536f16291276ae392}
+      \strng{fullhashraw}{a6c6ed5a5aeb74e536f16291276ae392}
+      \strng{bibnamehash}{8d6613ae59595910252a86a61babf6c8}
+      \strng{authorbibnamehash}{8d6613ae59595910252a86a61babf6c8}
+      \strng{authornamehash}{8d6613ae59595910252a86a61babf6c8}
+      \strng{authorfullhash}{a6c6ed5a5aeb74e536f16291276ae392}
+      \strng{authorfullhashraw}{a6c6ed5a5aeb74e536f16291276ae392}
+      \field{sortinit}{1}
+      \field{sortinithash}{4f6aaa89bab872aa0999fec09ff8e98a}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{eprintclass}{cs.LG}
+      \field{eprinttype}{arXiv}
+      \field{title}{Proximal Policy Optimization Algorithms}
+      \field{year}{2017}
+      \verb{eprint}
+      \verb 1707.06347
+      \endverb
+      \verb{urlraw}
+      \verb https://arxiv.org/abs/1707.06347
+      \endverb
+      \verb{url}
+      \verb https://arxiv.org/abs/1707.06347
+      \endverb
+    \endentry
+    \entry{openai_Proximal_Policy}{misc}{}{}
+      \field{sortinit}{1}
+      \field{sortinithash}{4f6aaa89bab872aa0999fec09ff8e98a}
+      \field{labeltitlesource}{title}
+      \field{howpublished}{\url{https://spinningup.openai.com/en/latest/algorithms/ppo.html\#id7}}
+      \field{note}{[Accessed 13-08-2026]}
+      \field{title}{{P}roximal {P}olicy {O}ptimization \&\#x2014; {S}pinning {U}p documentation --- spinningup.openai.com}
+    \endentry
+    \entry{medium_Demystifying_Advantage}{misc}{}{}
+      \name{author}{1}{}{%
+        {{hash=9427fc5f6be4f3d8b94572c17ad0d215}{%
+           family={Shrivastav},
+           familyi={S\bibinitperiod},
+           given={Shivang},
+           giveni={S\bibinitperiod}}}%
+      }
+      \strng{namehash}{9427fc5f6be4f3d8b94572c17ad0d215}
+      \strng{fullhash}{9427fc5f6be4f3d8b94572c17ad0d215}
+      \strng{fullhashraw}{9427fc5f6be4f3d8b94572c17ad0d215}
+      \strng{bibnamehash}{9427fc5f6be4f3d8b94572c17ad0d215}
+      \strng{authorbibnamehash}{9427fc5f6be4f3d8b94572c17ad0d215}
+      \strng{authornamehash}{9427fc5f6be4f3d8b94572c17ad0d215}
+      \strng{authorfullhash}{9427fc5f6be4f3d8b94572c17ad0d215}
+      \strng{authorfullhashraw}{9427fc5f6be4f3d8b94572c17ad0d215}
+      \field{sortinit}{1}
+      \field{sortinithash}{4f6aaa89bab872aa0999fec09ff8e98a}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{howpublished}{\url{https://shivang-ahd.medium.com/demystifying-the-advantage-function-in-reinforcement-learning-1c2b2a0d0daa}}
+      \field{note}{[Accessed 13-08-2026]}
+      \field{title}{{D}emystifying the {A}dvantage {F}unction in {R}einforcement {L}earning --- shivang-ahd.medium.com}
+    \endentry
+  \enddatalist
+\endrefsection
+\endinput
+

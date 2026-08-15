@@ -1,0 +1,543 @@
+%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%
+\chapter{Proximal Policy optimisation}
+%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%
+Proximal policy optimisation is an RL method which is and example of an gradient based on-policy technique. To understand what it does and how it works, we first give a brief introduction of Gradient based policy methods and then how this comes out of the same \cite{lilianwengPolicyGradient,Sutton:Intro_to_RL_second_ed}.
+%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%
+\section{Policy Gradient based methods }
+%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%
+Policy gradient based techniques are methods that utilize finding the gradient of the Policy for finding the best policy, i.\~e.\ a policy that maximized the reward function $J(\theta)$~\cite{}
+\begin{align}
+    % J(\theta) =  \sum_{s\in \mathds{S}} d^{\pi}(s) V^{\pi}(s),
+    J(\theta) =  V^{\pi}(s)
+\end{align}
+% where $d^{\pi}(s)$ represents the \textbf{stationary distribution (probability of already being in state \(s\) at any random moment in the long run)} in the policy $\pi$, while $V^{\pi}(s)$ is the value function of the state $s$ under the policy $\pi$.
+where $V^{\pi}(s)$ is the value function of the state $s$ under the policy $\pi$. Note that the above is for \textbf{episodic RL} (RL with discrete actions), however, the same works for \textbf{continuous RL} as well.
+Then, one can write 
+% \begin{align}
+%     J(\theta) &= \sum_{s\in \mathcal{S}} d^{\pi}(s) \sum_{a \in \mathcal{A}} \pi_{\theta}(a|s) Q^{\pi}(a,s) \\
+%     \text{where } V^{\pi}(s) &= \sum_{a \in \mathcal{A}} \pi_{\theta}(a|s) Q^{\pi}(a,s) 
+% \end{align} 
+\begin{align}
+    J(\theta) &=\sum_{a \in \mathcal{A}} \pi_{\theta}(a|s) Q^{\pi}(a,s) \\
+    \text{where } V^{\pi}(s) &= \sum_{a \in \mathcal{A}} \pi_{\theta}(a|s) Q^{\pi}(a,s) 
+\end{align} 
+Then, one can maximize the reward function by computing the gradient w.r.t. the optimisation parameters represented by  $\theta$,
+\begin{align}\label{eq:Gradient_theorem}
+    \grad_{\theta} J(\theta) &= \sum_{s\in \mathcal{S}} d^{\pi}(s) \sum_{a \in \mathcal{A}}\grad_{\theta} \pi_{\theta}(a|s) Q^{\pi}(a,s)
+\end{align}
+where $d^{\pi}(s)$ represents a \textbf{stationary distribution}.
+
+%%%
+%%%
+\begin{tcolorbox}[title= Proof of the Gradient Theorem, height = \textheight, breakable]
+    Now, we must note that equation \ref{eq:Gradient_theorem} is not obvious, since $Q^{\pi}(a,s)$ also depends on the parameters $\theta$ via the policy $\pi$. Thus, we note that 
+    \begin{align}
+        \grad_{\theta} V^{\pi}(s) &=  \sum_{a \in \mathcal{A}}\left[\grad_{\theta} \pi_{\theta}(a|s) Q^{\pi}(a,s)+  \pi_{\theta}(a|s) \grad_{\theta} Q^{\pi}(a,s)\right] 
+    \end{align}
+    Using the Bellmann equation (eq. \ref{eq:Bellman_eqn_for_Q_function_v3})
+    \begin{align}
+        \grad Q^{\pi}(a,s) &= \grad_{\theta} \left[\sum_{s',r} P(s',r|s,a)\left[r + \gamma V^{\pi}(s') \right]\right] \\
+        &=  \sum_{s',r} \gamma P(s',r|s,a)   \grad_{\theta}V^{\pi}(s') 
+    \end{align}
+    We can do this since $P(s',r|s,a)$ does not depend on the Policy. \\
+    {\color{red}\textbf{Note:} In principle we can link $P(s',r|s,a)$ to the policy but this is what most textbooks assume.}
+    \\
+    Thus, we now have that 
+    \begin{align}
+         \grad Q^{\pi}(a,s) &= \sum_{s'} \gamma p(s'|s,a)   \grad_{\theta}V^{\pi}(s').
+    \end{align}
+    Using the above, we can now rewrite the gradient for the value function as 
+    \begin{align}
+        \grad_{\theta} V^{\pi}(s) &=  \sum_{a \in \mathcal{A}}\left[\grad_{\theta} \pi_{\theta}(a|s) Q^{\pi}(a,s)+  \pi_{\theta}(a|s) \sum_{s'} \gamma p(s'|s,a)   \grad_{\theta}V^{\pi}(s')\right] 
+    \end{align} 
+    This effectively gives us a recursion relation for $\grad V_{\theta}^{\pi}(s)$. To simplify, we just rewrite 
+    \begin{align}
+        \phi(s) &= \sum_{a \in \mathcal{A}} \grad_{\theta}\pi_{\theta}(a|s) Q^{\pi}(a,s) \\
+        \rm{Pr}(s\rightarrow x,1,\pi)&= \sum_{a\in \mathcal{A}} \pi(a|s) p(x|s,a).
+    \end{align}
+    Note that $\rm{Pr}(s\rightarrow x,1,\pi)$ represents the probability of going from state $s$ to $x$ in one 1 step under policy $\pi$. Similarly we can consider the probability $\rm{Pr}(s\rightarrow x,k,a)$ of going from state $s$ to $x$ in one $k$ steps under policy $\pi$. By induction, we can show that 
+    \begin{align}
+        \grad_{\theta} V^{\pi}(s) &=  \sum_{x} \left(\sum^{\infty}_{k=0} \gamma^k\rm{Pr}(s\rightarrow x,k,\pi)\right) \sum_{a} \grad_{\theta} \pi(a|s) Q^{\pi}(x,a)
+    \end{align} 
+    Defining 
+    \begin{align}
+        \eta(x) =\left(\sum^{\infty}_{k=0} \gamma^k\rm{Pr}(s\rightarrow x,k,\pi)\right),
+    \end{align}
+    \clearpage
+    we get that 
+    \begin{align}
+        \grad_{\theta} J(\theta) &= \sum_{s} \eta(s) \sum_{a} \grad_{\theta} \pi(a|s) Q^{\pi}(s,a) \\
+        &=\left(\sum_{s}\eta(s)\right)\sum_{s} \frac{\eta(s)}{\sum_{s}\eta(s)} \sum_{a} \grad_{\theta} \pi(a|s) Q^{\pi}(s,a) \\
+        &\propto \sum_{s} d^{\pi}(s) \sum_{a} \grad_{\theta} \pi(a|s) Q^{\pi}(s,a)  
+    \end{align}
+\end{tcolorbox}
+%%%
+%%%
+What the gradient theorem implies is that all that we need to maximuze the reward function is to maximize the policy $\pi_{\theta}$. How to do so is what we will see in the next sections, and where the various type of RL models differ.
+%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%
+\section{Monte Carlo based Gradient Policy optimisation}
+%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%
+\subsection{REINFORCE}
+%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%
+The above now gives us an idea for the first \textbf{policy gradient based RL algorithm}. The reason the policy gradient theorem works is because we need a proportionality for gradient descent, since the proportinality factor can be absorbed in the step size $\alpha$ of the gradient descent optimizer. Thus, we can effectively say that 
+\begin{align}
+    \grad_{\theta} J(\theta) &\propto \sum_{s} d^{\pi}(s) \sum_{a} \grad_{\theta} \pi(a|s) Q^{\pi}(s,a) \\
+    &= \mathds{E}_{\pi}\left[\sum_{a} \grad_{\theta} \pi(a|S_t) Q^{\pi}(S_t,a)\right] 
+\end{align}
+where $\mathds{E}_{\pi} \equiv \mathds{E}_{S_t \sim d^{\pi}(s)}$. In a similar fashion, we can also write 
+\begin{align}
+    \grad_{\theta} J(\theta)&= \mathds{E}_{\pi}\left[\sum_{a} \pi(a|S_t) Q^{\pi}(S_t,a) \frac{\grad_{\theta} \pi(a|S_t)}{\pi(a|S_t)} \right] \\ 
+    &=  \mathds{E}_{\pi}\left[Q^{\pi}(S_t,A_t) \frac{\grad_{\theta} \pi(A_t|S_t)}{\pi(A_t|S_t)} \right] \\
+    &=  \mathds{E}_{\pi}\left[Q^{\pi}(S_t,A_t) \grad_{\theta}\log{\pi_\theta(A_t|S_t)} \right]
+\end{align}
+where now $\mathds{E}_{\pi} \equiv \mathds{E}_{S_t \sim d^{\pi},A_{t}\sim \pi_{\theta}}$. We note here
+\begin{align}
+    \mathds{E}_{S_t \sim d^{\pi},A_{t}\sim \pi_{\theta}} &\equiv \sum_{s_{0},a_0} \sum_{s_{1},a_1} \ldots \sum_{s_T,a_T} \sum^{T}_{t=0}\left[Q^{\pi}(S_t,A_t) \grad\log{\pi_\theta(A_{t,n}|S_{t,n})}\right] \\
+    &= \mathds{E}_{\pi} \left[ Q^{\pi}(S_t,A_t) \grad\log{\pi_\theta(A_{t,n}|S_{t,n})}\right]
+\end{align}
+so the expectation value is taken over the sequence $s_{0},a_0,r_1,\ldots,s_{T-1},a_{T-1},r_T$. We also note that for later times, we can define the Q value as 
+\begin{align}
+    Q^{\pi}(S_t,A_t) = \gamma^t G_t,
+\end{align}
+to account for the delay in the path. In the case the decay rate $\gamma=1$, we get back our original non-decay version of the gradient theorem. 
+%%%%%
+%%%%%
+\begin{tcolorbox}[title = Reason for equivalence, breakable]
+
+    \textbf{Objective as a value function:}
+    \[
+    J(\theta) = v_\pi(s_0) = \mathbb{E}\left[\sum_{t=0}^{\infty}\gamma^t R_{t+1} \,\middle|\, S_0 = s_0\right]
+    \]
+
+    \textbf{Weng's unrolled gradient} (sum over states, weighted by total discounted visitation):
+    \[
+    \nabla_\theta J(\theta) = \sum_{x \in \mathcal{S}} \eta(x)\,\phi(x), 
+    \qquad 
+    \eta(x) = \sum_{k=0}^{\infty} \rho^\pi(s_0 \to x, k),
+    \qquad 
+    \phi(x) = \sum_{a} \nabla_\theta \pi_\theta(a|x)\, Q^\pi(x,a)
+    \]
+
+    \textbf{Normalizing $\eta$ into a proper distribution $\mu$:}
+    \[
+    \mu(x) = \frac{\eta(x)}{\sum_{x'} \eta(x')}
+    \quad\Longrightarrow\quad
+    \nabla_\theta J(\theta) \;\propto\; \mathbb{E}_{S \sim \mu}\big[\phi(S)\big] 
+    = \mathbb{E}_\pi\left[q_\pi(S,A)\,\nabla_\theta \ln \pi_\theta(A|S)\right]
+    \]
+
+    This last expression is exactly \textbf{Image 1}: a single-sample expectation, with all the ``sum over $t$'' structure absorbed into the distribution $\mu$ that $S$ is drawn from.
+
+    \textbf{Discounted state-visitation distribution} (the proper version of $\mu$, with explicit normalization):
+    \[
+    d_\gamma(s \mid s_0) = (1-\gamma)\sum_{t=0}^{\infty} \gamma^t\, P(S_t = s \mid S_0 = s_0)
+    \]
+
+    \textbf{Identity linking a trajectory-sum to a single-state expectation}, for any function $f$:
+    \[
+    \mathbb{E}_{S \sim d_\gamma}[f(S)] = (1-\gamma)\sum_{t=0}^{\infty} \gamma^t\, \mathbb{E}\big[f(S_t) \mid S_0 = s_0\big]
+    \]
+
+    \textbf{Rearranged} --- this is the explicit correspondence between the two forms:
+    \[
+    \sum_{t=0}^{\infty} \gamma^t\, \mathbb{E}\big[f(S_t) \mid S_0 = s_0\big] 
+    = \frac{1}{1-\gamma}\, \mathbb{E}_{S \sim d_\gamma}\big[f(S)\big]
+    \]
+
+    \textbf{Applied to the two images directly:}
+    \[
+    \underbrace{\mathbb{E}_{\pi_\theta}\!\left[\sum_{t=0}^{T} \nabla_\theta \ln \pi_\theta(A_t|S_t) \sum_{\tau=t}^{T} \gamma^\tau R_\tau \,\middle|\, S_0=s_0\right]}_{\text{Image 2 --- explicit sum over } t \text{ along one trajectory}}
+    \;\propto\;
+    \underbrace{\mathbb{E}_{S\sim\mu,\, A\sim\pi}\!\left[G_t\,\frac{\nabla_\theta \pi_\theta(A|S)}{\pi_\theta(A|S)}\right]}_{\text{Image 1 --- single sample from the occupancy measure}}
+    \]
+
+    \textbf{Summary of the resolution:} Image 2 is the literal, unsimplified sum over every step $t$ of a trajectory rooted at a fixed $s_0$. Image 1 is that same quantity after recognizing the sum over $t$ can be rewritten as a single expectation over one state $S$ drawn from the (discounted) state-occupancy distribution $\mu$ (equivalently $d_\gamma$) induced by $\pi$. They are the same gradient, related by the identity above --- Image 2 is what you actually compute from a rollout; Image 1 is the compressed form used in proofs.
+\end{tcolorbox}
+%%%%%
+%%%%%
+In fact, we can simplify the above even more by using the defintion of the q function to get that 
+\begin{align}
+    \grad_{\theta} J(\theta) &=  \mathds{E}_{\pi}\left[G_t \grad_{\theta} \log{\pi_\theta(A_t|S_t)} \right]
+\end{align}
+where $G_t$ is the delayed total reward at time $t$. Note that we have now converted an expectation value over the distribution into a time series based task using the above expression. 
+
+\begin{tcolorbox}[title=Sutton algorithm,breakable]
+Now, if we think about the above expression, we note that, in principle, one would need to average over multiple different. However, one can then consider the \textbf{Stochastic Gradient descent (SGD)} strategy where we need to consider only one of the paths. Thus, under SGD, we can write the update equation to be as follows 
+\begin{tcolorbox}[title= Update equation,breakable]
+    \begin{align}
+        \theta \rightarrow \theta + \alpha \left[ G_t \grad\log{\pi_\theta(A_t|S_t)}\right]
+    \end{align}    
+    where $\left[ G_t \log{\pi_\theta(A_t|S_t)}\right]$ is sampled by using the current policy $\pi$. Thus, we find $G_t$ by simulating the evolution using the policy $\pi$ and then compute the gradient.   
+\end{tcolorbox}
+The algorithm for the same is thus given as follows
+\begin{tcolorbox}[title = Algorithm,breakable]
+    Input: A differentiable polict $\pi_{\theta}(a|s)$.\\
+    Initialize: $\theta \in \mathds{R}^d$\\
+    Repeat:\\
+    \null\quad Generate an episode $s_0,a_0,r_1,s_1,\ldots,s_{T-1},a_{T-1},r_T$ following $\pi_{\theta}$. \\
+    \null\quad For each step of the episode $t=0,\ldots,T-1$ \\
+    \null\quad$G\rightarrow $ return from step t \\
+    \null\quad$\theta \rightarrow \theta + \alpha \gamma^t G_{t}\grad_{\theta} \log( \pi_{\theta}(A_t|S_t))$
+\end{tcolorbox}
+    
+\end{tcolorbox}
+
+\begin{tcolorbox}[title=Wikipedia algorithm,breakable ]
+A more natural update equation for the same is as below~\cite{wiki:Policy_gradient_method}
+\begin{tcolorbox}[title= Update equation,breakable]
+    Consider $N$ trajectories with different starting points $s_{0,i}$ where $i=1,\ldots,N$. Then, the update equation is 
+    \begin{align}
+        \theta \rightarrow \theta - \alpha \frac{1}{N}\sum^N_{n=1} \sum^{T}_{t=0}\left[ \gamma^t G_{t,n} \grad\log{\pi_\theta(A_{t,n}|S_{t,n})}\right]
+    \end{align}    
+    where $\left[ G_{t,n} \log{\pi_\theta(A_{t,n}|S_{t,n})}\right]$ is computed by getting the sequence $S_{0,n},A_{0,n},R_{1,n},\ldots,S_{T-1,n},A_{T-1,n}, R_{T,n}$ using the policy $\pi_{\theta}$. This is our standard Gradient descent that we know of.  
+\end{tcolorbox}
+The algorithm for the same is thus given as follows
+\begin{tcolorbox}[title = Algorithm,breakable]
+    Input: A differentiable polict $\pi_{\theta}(a|s)$.\\
+    Initialize: $\theta \in \mathds{R}^d$\\
+    Choose N. \\
+    Repeat:\\
+    \null\quad for $n = 1,\ldots,N$:\\
+    \null\quad\quad Generate an episode $s_{0,n},a_{0,n},r_{1,n},s_{1,n},\ldots,s_{T-1,n},a_{T-1,n},r_{T,n}$ following $\pi_{\theta}$.    \\
+    \null\quad\quad For each step of the episode $t=0,\ldots,T-1$, compute \\
+    \null\quad\quad$G_{t,n}\rightarrow \sum^{T}_{\tau=t} \gamma^\tau r_{\tau,n} $: return from step t \\
+    \null\quad$\theta \rightarrow \theta  + \alpha \frac{1}{N}\sum^N_{n=1} \sum^{T}_{t=0}\left[ \gamma^t G_{t,n} \grad\log{\pi_\theta(A_{t,n}|S_{t,n})}\right]$
+\end{tcolorbox}
+    
+\end{tcolorbox}
+Fo simplicity, we will now work with the sequential defintion of the expectation value, since that is easier to work with.
+%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%
+\subsection{REINFORCE with baseline}
+%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%
+However, it turns out that the variance seen in the evolution for the REINFORCE algorithm is too high. So, we need a way to reduce the variance in the evolution. This can be easily achived by considering the substraction of a \textbf{baseline} function $b(s)$ which only depends on the state $s$~\cite{Sutton:Intro_to_RL_second_ed}. So, the Gradient is then given by 
+% \begin{align}
+%     \grad_{\theta} J(\theta) &= \sum_{s\in \mathcal{S}} d^{\pi}(s) \sum_{a \in \mathcal{A}}\grad_{\theta} \pi_{\theta}(a|s) \left(Q^{\pi}(a,s)-b(s) \right)
+% \end{align}
+\begin{align}
+    \grad_{\theta} J(\theta) &= \sum_{s\in \mathcal{S}} d^{\pi}(s) \sum_{a \in \mathcal{A}}\grad_{\theta} \pi_{\theta}(a|s) \left(Q^{\pi}(a,s)-b(s) \right)
+\end{align}
+The above is correct since 
+\begin{align}
+    \sum_{s\in \mathcal{S}} d^{\pi}(s) \sum_{a \in \mathcal{A}}b(s) \grad_{\theta} \pi_{\theta}(a|s)  &= \sum_{s\in \mathcal{S}} d^{\pi}(s) b(s)\grad_{\theta} \sum_{a \in \mathcal{A}} \pi_{\theta}(a|s) 
+\end{align}
+But $\pi(a|s)$ is a conditional probability, and thus $\sum_{a\in \mathcal{A}} \pi_(\theta)(a|s) = 1$, implying that 
+\begin{align}
+    \sum_{s\in \mathcal{S}} d^{\pi}(s) \sum_{a \in \mathcal{A}}b(s) \grad_{\theta} \pi_{\theta}(a|s)  = 0,
+\end{align}
+thus giving us the original result. In a fashion similar to the previous derivation, we also note that 
+\begin{align}
+    \grad_{\theta} J(\theta) &=  \mathds{E}_{\pi}\left[\left(Q^{\pi}(S_t,A_t)- b(S_t)\right) \grad_{\theta} \log{\pi_\theta(A_t|S_t)} \right]
+\end{align}
+where $\mathds{E}_{\pi} \equiv \mathds{E}_{S_t \sim d^{\pi},A_{t}\sim \pi_{\theta}}$. 
+
+\begin{tcolorbox}[title = Alternative derivation, breakable]
+    Let us now consider an alternative derivation for the same. We follow the calculation as shown in \cite{daniel_takeshi:RL_GoingDeeper}.
+    The idea is now to use the sequential definition of the expectation value to derive the same result as before.
+    To do so, we start with the following expression
+    \begin{align}
+        \tilde{J}(\theta) &=  \mathds{E}_{s_0,a_0}  \mathds{E}_{a_{1:T},s_{1:T}} \sum_{t}\left[ \left\{Q^{\pi}(S_t,A_t)-b(S_t)\right\} \grad_{\theta}\log \pi_{\theta}(A_t|S_t)\right].
+    \end{align} 
+    Let us just focus on the term 
+    \begin{align}
+        \mathds{E}_{s_0,a_0} \mathds{E}_{a_{1:T},s_{1:T}} \sum^T_{t=0}\left[ b(S_t)\grad_{\theta}\log \pi_{\theta}(A_t|S_t)\right].
+    \end{align} 
+    In fact, we just consider for a fixed $t$, 
+    \begin{align}
+        \mathds{E}_{s_0,a_0} \mathds{E}_{a_{1:T},s_{1:T}} \left[ b(S_t)\grad_{\theta}\log \pi_{\theta}(A_t|S_t)\right] &=
+        \mathds{E}_{a_{0:t},s_{0:t}} b(S_t)\mathds{E}_{a_{1:t+1},s_{1:t+1}}\left[ \grad_{\theta}\log \pi_{\theta}(A_t|S_t)\right]  
+    \end{align}
+    However, note that $\grad{\pi_{\theta}(A_t|S_t)}$ is an effective constant for the varition of times $t+1:T$, since $A_t$ and $S_t$ are fixed then. Also the expectation value of a constant is nothing but that constant, implying that 
+    \begin{align}
+        \mathds{E}_{a_{t+1:T},s_{t+1:T}}\left[ \grad_{\theta}\log \pi_{\theta}(A_t|S_t)\right] = \grad_{\theta}\log \pi_{\theta}(A_t|S_t)
+    \end{align} 
+    Similarly, we can also say that 
+    \begin{align}
+        \mathds{E}_{a_{0:t-1},s_{0:t-1}}\left[ \grad_{\theta}\log \pi_{\theta}(A_t|S_t)\right] = \grad_{\theta}\log \pi_{\theta}(A_t|S_t)
+    \end{align}
+    Thus, we are left with
+    \begin{align}
+        \mathds{E}_{s_0,a_0} \mathds{E}_{a_{1:T},s_{1:T}} \left[ b(S_t)\grad_{\theta}\log \pi_{\theta}(A_t|S_t)\right]\\
+        &= \mathds{E}_{a_{t},s_{t}} b(s_t) \grad_{\theta}\log \pi_{\theta}(a_t|s_t)
+        &=\sum_{s_t \in \mathcal{S},a_t\in\mathcal{A}}b(s_t) P(a_t,s_t) \grad_{\theta}\log \pi_{\theta}(a_t|s_t) \\
+        &= \sum_{s_t \in \mathcal{S},a_t\in\mathcal{A}}b(s_t) \pi_{\theta}(a_t|s_t) P(s_t) \grad_{\theta}\log \pi_{\theta}(a_t|s_t) \:\: \nonumber \\
+        &\text{ as } P(a_t,s_t) = \pi_{\theta}(a_t|s_t)P(s_t)\\
+        &= \sum_{s_t \in \mathcal{S},a_t\in\mathcal{A}}b(s_t) P(s_t) \grad_{\theta} \pi_{\theta}(a_t|s_t) \\
+        &= \sum_{s_t \in \mathcal{S}}b(s_t) P(s_t) \grad_{\theta} \sum_{a_t\in\mathcal{A}}\pi_{\theta}(a_t|s_t)\\
+        &= \sum_{s_t \in \mathcal{S}}b(s_t) P(s_t) \grad_{\theta} 1 \\
+        &= 0
+    \end{align}
+    Thus we see that for arbitrary $t$, teh contribution from the $b(s_t)$ term is $0$. Thus, we get that 
+    \begin{align}
+        \mathds{E}_{s_0,a_0} \mathds{E}_{a_{1:T},s_{1:T}} \sum^T_{t=0}\left[ b(S_t)\grad_{\theta}\log \pi_{\theta}(A_t|S_t)\right] = 0
+    \end{align}
+    and thus 
+    \begin{align}
+        \tilde{J}(\theta) &=  \mathds{E}_{s_0,a_0}  \mathds{E}_{a_{1:T},s_{1:T}} \sum_{t}\left[ \left\{Q^{\pi}(S_t,A_t)\right\} \grad_{\theta}\log \pi_{\theta}(A_t|S_t)\right] = J(\theta). 
+    \end{align}
+    Thus proved
+\end{tcolorbox}
+
+One may now question if the above reduction truly helps, as in if this truly reduces the variance. To show that this does indeed reduce the variance we need to compute  
+\begin{align}
+    \rm{Var}_{\pi}\left(\sum_{t}\left[ \left\{Q^{\pi}(S_t,A_t)-b(S_t)\right\} \grad_{\theta}\log \pi_{\theta}(A_t|S_t)\right]\right)
+\end{align}
+%%%%%%%%%
+%%%%%%%%%
+\begin{tcolorbox}[title= Proof of the variance reduction, breakable]
+    So, the task is to find $\rm{var}(\sum^T_{t=0} X_t)$ where 
+    \begin{align}
+        X_t =  \left\{Q^{\pi}(S_t,A_t)-b(S_t)\right\} \grad_{\theta}\log \pi_{\theta}(A_t|S_t).
+    \end{align}
+    To simplify, we make the following assumptions~\cite{daniel_takeshi:RL_GoingDeeper}
+    \begin{enumerate}
+        \item $\rm{Cov}(X_t,X_{t'})=0$, so that we can write 
+            $\rm{Var}(\sum_{t} X_t) = \sum_{t}\rm{Var}( X_t)$. Eventhough this may not be true, it still helps us understand how the baseline works.
+        \item The second approximation that we take is the indepedence of the terms $\left\{Q^{\pi}(S_t,A_t)\right\}$ and $\grad_{\theta}\log \pi_{\theta}(A_t|S_t)$.
+    \end{enumerate}    
+    We now see that 
+    \begin{align}
+        \rm{Var}(\sum^T_{t=0}X_t) &= \sum^T_{t=0} \rm{Var}(X_t)\\
+        &=\sum^T_{t=0} \mathds{E}(X^2_t) - \mathds{E_t}^2
+    \end{align}
+    However, we have shown before that 
+    \begin{align}
+        \mathds{E}\left[\sum^T_{t=0}\left\{Q^{\pi}(S_t,A_t)-b(S_t)\right\} \grad_{\theta}\log \pi_{\theta}(A_t|S_t)\right] = \mathds{E}\left[\sum^T_{t=0}\left\{Q^{\pi}(S_t,A_t)\right\} \grad_{\theta}\log \pi_{\theta}(A_t|S_t)\right].
+    \end{align}
+    Thus we can ignore the $\sum^T_{t=0}\mathds{E}_{\pi}(X_t)^2$ term and focus on the former term. Using the \textbf{indepedence of the individual terms}, we can say that  
+    \begin{align}
+        \sum^T_{t=0} \mathds{E}(X^2_t) = \sum^T_{t=0} \mathds{E}_{\pi}(\left\{Q^{\pi}(S_t,A_t)-b(S_t)\right\}^2)\mathds{E}_{\pi}(\left\{\grad_{\theta}\log \pi_{\theta}(A_t|S_t)\right\}^2)
+    \end{align}
+    Thus, we see that the variance does indeed reduce when $b(S)t)\neq 0$.
+\end{tcolorbox}
+%%%%%%%%%
+%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%
+\subsection{Advantage function}
+%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%
+We have seen briefy that the introduction of the baseline reduces the variance. In principle one can choose it to be a constant $b(S_t)=\text{const}$. However, the choice of a baseline would be better if we make it state dependent. Avery simple example of such a function is the Value function ($V(S_t)$). Thus, we can now define a new function called the \textbf{Advantage function ($A(s_t,a_t)$)} as 
+\begin{align}
+    A(s_t,a_t) = Q(s_t,a_t) - V(s_t).
+\end{align}
+In general, the advantage function will depend on the policy $\pi(s_t,a_t)$, so we get that $A_{\pi}(s_t,a_t)$. The gradient theorem is thus updated as 
+\begin{align}
+    J(\theta) &=  \mathds{E}_{\pi}\left[ \sum_{t} A^{\pi}(S_t,A_t) \grad_{\theta}\log \pi_{\theta}(A_t|S_t)\right].
+\end{align}
+%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%
+\section{Action-Critic models}
+%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%
+Having introduced the idea of the Advantage function, we can now look at the idea of actor-critic RL models. \\
+\begin{tcolorbox}[title = Actor-critic model]
+    The actor-critic algorithm (AC) is a family of reinforcement learning (RL) algorithms that combine policy-based RL algorithms such as policy gradient methods, and value-based RL algorithms such as value iteration, Q-learning, SARSA, and TD learning.~\cite{wiki:Actor-critic_algorithm}.
+\end{tcolorbox}
+Let us now understand the two basic components of these models
+\begin{enumerate}
+    \item \textbf{Actor ($\pi_{\theta}$):} 
+    \begin{itemize}
+        \item The actor is the basically the one who decides what action must be taken next. So, in some sense it is just another name for our \textbf{Policy} $\pi_{\theta}(s_t,a_t)$.
+        \item \textbf{Input:} States 
+        \item \textbf{Output:} Probability distrbution of the actions.
+    \end{itemize}
+    \item \textbf{Critic:} 
+    \begin{itemize}
+        \item The critic is the network that decides the value of the current state.
+        \item A simple example of the critic is the Value function $V(S_t)$ or the Q function $Q(a_t,s_t)$. 
+    \end{itemize}
+\end{enumerate}
+To understand how an actor-critic method works, let us consider an example of the same. 
+%%%%%
+%%%%%
+\begin{tcolorbox}[title=Actor-critic example,breakable]
+    Let us consider an example of a discrete RL model where the the next choice is chosen based on the Policy $\pi_{\theta}(s_t,a_t)$. Next, for the critic, we consider learning the Q function $Q_{\pi}(a_t,s_t)$. So, we have two neural nets, one learning the Policy and the second the Q function, with one affecting the learning of the other. \\ 
+    We now look at the equation 
+    \\
+    Let us now consider the algorithm for the same
+    \begin{tcolorbox}[title = Actor critic algorithm,breakable]
+        \textbf{Input:} Policy $\pi_{\theta}(A|s)$ and $V_{w}(s)$\\
+        \textbf{Paremetrs:} $\theta,w$ and Step sizes $\alpha_{\theta}>0,\alpha_{w}>0$\\
+        \textbf{Initialize:} Parameters $\theta,w$.\\
+        $I=1$
+        Repeat forever:\\
+        \null\quad Initialise the first state $s$.\\
+        \null\quad while $s$ is not terminal:\\
+        \null\quad\quad $A\sim \pi_{\theta}(.|s)$.\\
+        \null\quad\quad Take action $A$ and see the next state and reward $S',R$. \\
+        \null\quad\quad $\delta = R+ \gamma V_{w}(s')-V_{w}(s)$. If $s$ is terminal, then $V_w(s')=0$.
+        \null\quad\quad $w \rightarrow w + \alpha_w \delta I \grad_w V_w(s)$ \\
+        \null\quad\quad $\theta \rightarrow \theta + \alpha_{\theta} \delta I \grad_w \pi_{\theta}(a|s)$\\
+        \null\quad\quad $I\rightarrow\gamma I$
+        \null\quad\quad $S\rightarrow S'$
+    \end{tcolorbox}     
+    Here what has been combined is the $\rm{TD}(1)$ method for the critic and the Gradient Policy method for the actor. 
+\end{tcolorbox}
+%%%%%
+%%%%%
+In fact, current literature has generalised the possible gradient theorem
+\begin{align}
+    J(\theta) = \mathds{E}_{\pi}\left[ \sum^T_{t=0} \grad_{\theta}\pi_{\theta}(a_t|s_t) \Psi_t | S_0 = s_0 \right]
+\end{align}
+where $\Psi_t$ can have the following values
+\begin{itemize}
+    \item $\Psi_t =\gamma^t \sum^T_{\tau=t} \gamma^{\tau-t} R_{\tau}$: REINFORCE algorithm
+    \item $\Psi_t =\gamma^t \sum^T_{\tau=t} \gamma^{\tau-t} R_{\tau}-b(s_t)$: REINFORCE with baseline algorithm 
+    \item $\Psi_t = \gamma^t(R_t + \gamma V^{\pi}(s_{t+1})-V^{\pi}(s_{t}))$: Time Difference (TD)-1 learning
+    \item $\gamma^t Q^{\pi}(a_t,s_t)$
+    \item $\gamma^t A^{\pi}(a_t,s_t)$ : Advantage Actor-Critic (A2C)
+    \item $\Psi_t = \gamma^t(\sum^{n-1}_{k=0} R_{t+k} + \gamma^n V^{\pi}(s_{t+n})-V^{\pi}(s_{t}))$: TD(n) learning
+\end{itemize} 
+The above shows the variation in the different types of actor-critic models.
+%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%
+\section{Off vs On policy}
+%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%
+\subsection{On Policy}
+%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%
+Methods whose training samples are collected according to the target policy — the very same policy that we try to optimize for are called as \textbf{on policy methods}\cite{lilianwengPolicyGradient}. Eg- REINFORCE, vanilla gradient.
+%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%
+\subsection{Off Policy}
+%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%
+In Off-policy learning we seek to learn a value function for a target policy $\pi$, given data due to a different behavior policy $b$. In the prediction case, both policies are static and given, and we seek to learn either state values $\tilde{V}\approx V $ or action values $\tilde{Q} \approx Q$. In the control case, action values are learned, and both policies typically change during learning— $\pi$ being the greedy policy with respect to $\tilde{Q}$, and b being something
+more exploratory such as the greedy policy with respect to $\tilde{Q}$ \cite{Sutton:Intro_to_RL_second_ed}.\\
+Off policy methods result in several additional advantages\cite{lilianwengPolicyGradient}:
+\begin{itemize}
+    \item The off-policy approach does not require full trajectories and can reuse any past episodes (“experience replay”) for much better sample efficiency.
+    \item The sample collection follows a behavior policy different from the target policy, bringing better exploration.
+\end{itemize}
+Now let's see how off-policy policy gradient is computed. The behavior policy for collecting samples is a known policy (predefined just like a hyperparameter), labelled as $\beta(a|s)$. The objective function sums up the reward over the state distribution defined by this behavior policy:
+\begin{align}
+    J(\theta) = \sum_{s\in \mathcal{S}} d^{\beta}(s) \sum_{a\in \mathcal{A}} Q^{\pi}_{a,s} \pi_{\theta}(a,s)=\mathds{E}_{s\sim\beta}\left[\sum_{a\in\mathcal{A}}Q^{\pi}_{a,s} \pi_{\theta}(a,s)\right ].
+\end{align}
+Notice here that we sample the states $s$ from the \textbf{stationary distribution of the policy $\beta$} and NOT that of $\pi_{\theta}$. In this way the two differ. We recall here that 
+\begin{align}
+    d^{\beta}(s) = \lim_{t\rightarrow \infty} P(S_t=s|s_0,\beta).
+\end{align}
+Now to get an expression similar to the previous on-policy case, we again consider 
+\begin{align}
+    \grad_{\theta}J(\theta) &= \grad_{\theta} \mathds{E}_{s\sim\beta}\left[\sum_{a\in\mathcal{A}}Q^{\pi}_{a,s} \pi_{\theta}(a,s)\right ]\\
+    &=\mathds{E}_{s\sim\beta}\left[\sum_{a\in\mathcal{A}}\grad (Q^{\pi}_{a,s}) \pi_{\theta}(a,s) +  Q^{\pi}_{a,s} \grad(\pi_{\theta}(a,s))\right ]\\
+    &\approx \mathds{E}_{s\sim\beta}\left[\sum_{a\in\mathcal{A}}  Q^{\pi}_{a,s} \grad(\pi_{\theta}(a,s))\right ].
+\end{align}
+The former term is thrown away for two reasons
+\begin{enumerate}
+    \item Generally computing $\grad_{\theta} Q^{\pi}(a,s)$ is extremely hard.
+    \item In the paper \cite{degris_2013:offpolicyactorcritic}, they claim that the solution set obtained from the approximate gradient is a super set of the true one, and is indeed the same for the tabular case (for functional case of $Q^{\pi}$, the two converge for small enough steps). Effectively, they say that since the gradient greedily changes the action probabilities for only one state. Thus, extrapolating from this, in practice, more generally a local representation for $\pi$ suffices, since parameter updates influence only a small number of states. Similarly, in the non-tabular case, the claim holds if $\gamma$ is small (the return is myopic), again because changes to the policy mostly affect the action-value function locally.
+\end{enumerate}
+Thus, we can drop proceed with our derivation. Then 
+\begin{align}
+    \grad_{\theta}J(\theta) &\approx \mathds{E}_{s\sim\beta}\left[\sum_{a\in\mathcal{A}}  Q^{\pi}_{a,s} \grad(\pi_{\theta}(a,s))\right ] \\
+    \grad_{\theta}J(\theta) &\approx \mathds{E}_{s\sim\beta}\left[\sum_{a\in\mathcal{A}}\beta(a|s) \frac{\pi(a|s)}{\beta(a|s)} Q^{\pi}(a,s) \frac{\grad\pi_{\theta}(a|s)}{\pi_{\theta}(a|s)}\right ] \\
+    \grad_{\theta}J(\theta) &\approx \mathds{E}_{s\sim d^{\beta},a\sim \beta(a)}\left[\frac{\pi(a|s)}{\beta(a|s)} Q^{\pi}(a,s) \frac{\grad\pi_{\theta}(a|s)}{\pi_{\theta}(a|s)}\right ].
+\end{align}
+The result of this manipulation is that given a fixed policy $\beta$ to sample our trajectories from, we can find the minimum of the true policy $\pi_{\theta}$ by computing the gradient in a fashion that does not need repeated sampling. This trick has effectively made sampling easier and less cumbersome since we can sample the trajectory and thus the $Q$ function for each state-action pari beforehand, making our leaning faster.
+%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%
+\section{Proximal Policy Approximation (PPO)}
+%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%
+We now have all the ingredients to understand the \textbf{Proximal Policy optimisation (PPO)} methodology of Reinforcement learning. PPO is an \textbf{On policy} optimisation strategy that was made by OpenAI \cite{schulman_2017:proximal_policy_optimization_algorithms} to imporve training stability. This is an optimised version of the \textbf{Trust region policy optimisation (TRPO)} strategy, one which we will talk about later. It so happens that the TRPO strategy is hard to implement, but is something we would still like to do. To do so, PPO implements a \textbf{clipped surrogate objective}, while still retaining similar performance.
+%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%
+\subsection{TRPO: Brief summary}
+%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%
+However, before we do get to the main details, let us consider the reason for why we need it and so we briefly introduce the \textbf{Trust region poicy Optimisation (TRPO)} method. The idea is that the reward function 
+\begin{align}
+    J(\theta) = \mathds{E}_{s\sim d^{\pi_{\theta_{\rm{old}}}},a\sim \beta(a)}\left[\frac{\pi(a|s)}{\beta(a|s)} A^{\pi}(a,s) \right ]
+\end{align}
+where $A$ is the advantage function. When training on policy, theoretically the policy for collecting data is same as the policy that we want to optimize. However, when rollout workers and optimizers are running in parallel asynchronously, the behavior policy can get stale. TRPO considers this subtle difference: It labels the behavior policy as $\pi_{\theta_{\rm{old}}}(a|s)$ 
+and thus the objective function becomes
+\begin{align}
+    J(\theta) = \mathds{E}_{s\sim d^{\pi_{\theta_{\rm{old}}}},a\sim \pi_{\theta_{\rm{old}}}}\left[\frac{\pi(a|s)}{\pi_{\theta_{\rm{old}}}(a|s)} A^{\pi}(a,s) \right ].
+\end{align}
+TRPO thus aims to maximize the objectiive function subject to  \textit{trust region constraint} which enforces that the distane between the old and new policies, as measred by the KL divergence, be within parameter $\delta$, i.e.
+\begin{align}
+    \mathcal{E}_{s\sim d^{\pi_{\theta_{\rm{old}}}},a\sim \pi_{\theta_{\rm{old}}}} \left[D_{KL}\left(\pi_{\theta_{\rm{old}}}(.|s)|| \pi_{\theta}(.|s)\right) \right] \leq \delta
+\end{align}
+
+%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%
+\subsection{PPO: actual policy}
+%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%
+We note that despite the above idea being interesting, enforcing the trust region is hard during evolution. To make this simpler, PPO basically implements a \textbf{clipped surrogate objective} as a replacement for the TRPO constraint. We first define
+\begin{align}
+    r(\theta) = \frac{\pi_{\theta}}{\pi_{\theta_{\rm{old}}}}
+\end{align}
+Then, we have that 
+\begin{align}
+    J^{TRPO}(\theta) = \mathds{E}\left[r(\theta)(a|s)A_{\theta_{\rm{old}}}(a,s) \right]
+\end{align}
+while for PPO, we have 
+\begin{align}
+    J^{CLIP}(\theta)= \mathds{E}\left[\min\left( r(\theta)A_{\theta_{\rm{old}}}(a|s),\rm{clip}(r(\theta),1+\epsilon,1-\epsilon)A(a,s) \right)\right]
+\end{align}
+where $\rm{clip}(r(\theta),1+\epsilon,1-\epsilon)$ clips the ratio $r(\theta)$ to be no more than $1+\epsilon$ less than $1-\epsilon$.\\
+In the PPO paper, the authors used amodified version of the reward function, which also took into account exploration by introducing the terms
+\begin{align}
+    \tilde{J}^{\rm{CLIP}} = \mathds{E}\left[J^{\rm{CLIP}} - c_1(V_{\theta}(s)-V_{\rm{target}})^2+c_2 H(s,\pi_{\theta}(.|s)) \right]
+\end{align} 
+where $H(s,\pi_{\theta}(.|s))$ is the entropy term to encourage exploration. We will not discuss the same in much detail. 
+%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%
+\subsection{PPO: Algorithm}
+%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%
+Having now introduced the idea behind PPO, we now look at the algorithm. We focus our attention on the \textbf{clip} policy. The algorithm is taken from OpenAI's writeup~\cite{openai_Proximal_Policy}.
+\begin{tcolorbox}[title =PPO Algorithm,breakable]
+    \begin{enumerate}
+        \item \textbf{Input:} Initial policy parameters $\theta_0$, Initial value parameters $\phi_0$
+        \item for $k =0,1,2\ldots$ do:
+        \item \null\quad Collect a set of trajectories $\mathcal{D}_k = {\tau_i}$ by running the policy $\pi_{\theta_k}(a|s)$ in the environment.
+        \item \null\quad Compute the Rewards to go $R_{t}=\sum^T_{\tau=0} \gamma^{\tau} r_{t+\tau}$. In fact, one can also use the recursion rellation 
+        \begin{align}
+            R_{t} = r_{t}+\gamma R_{t+1}
+        \end{align}
+        to make the calculation simple. 
+        \item  \null\quad Compute the Advantage $A(a_t,s_t)$ (using any advatage estimate) based on the current Value function $V_{\phi_k}$. One simple advantage estimate that can be used is \textbf{TD advantage}
+        \begin{align}
+            A(a_t,s_t) =r_t + \gamma V_{t+1}(s_{t+1}) - V_{t}(s_t).
+        \end{align}
+        Or, one can also use the expression 
+        \begin{align}
+            A(a_t,s_t) = R_t - V_{\phi_k}(s_t)  
+        \end{align}
+        where we have replaced $Q^{\pi}(a_t,s_t) = R_t$ by the rewards to go function. Note that an optimisation step is also to normalize the advatage function over all trajectories, thus making the whole system more stable. 
+        \item \null\quad Update the policy by maximiing the PPO objective 
+        \begin{align}
+            \mathcal{L}(\theta) = \frac{1}{|\mathcal{D}_k|}\frac{1}{T} \sum_{\tau \in \mathcal{D}_k} \sum^T_{t=0} \left[\min\left( \frac{\pi_{\theta}(a|s)}{\pi_{\theta_{\rm{old}}}(a|s)}A_{\theta_{\rm{old}}}(a|s),
+            \rm{clip}\left(\frac{\pi_{\theta}(a|s)}{\pi_{\theta_{\rm{old}}}(a|s)},1+\epsilon,1-\epsilon \right ) A_{\theta_{\rm{old}}}(a,s) \right)\right] 
+        \end{align}
+        by any optimisation technique (say SGD or Adam)
+        \begin{align}
+            \theta_k \rightarrow \theta_k + \alpha \grad_{\theta} \mathcal{L}(\theta)
+        \end{align}
+        \item \null\quad Fit value function by \textbf{Regression} on mean squared error 
+        \begin{align}
+            \frac{1}{|\mathcal{D}_k T|}\sum_{\tau \in \mathcal{D}_k}\sum^T_{t=0}(V_{\phi}(s_t)-R_{t})^2
+        \end{align}
+        \item end
+    \end{enumerate}
+\end{tcolorbox}
+One may now ask how to compute the advatange function $A$ from the value function $V$. For simplicity, we will use the \textbf{Time difference (TD) advantage} 
+\begin{align}
+    A(a_t,s_t) = r_t - V(s_t) +\gamma V(s_{t+1})
+\end{align}
+where $r_t$ is the reward for the particular action $a_t$ in state $s_t$. One can also refer to \cite{medium_Demystifying_Advantage} for more details on the same.
+%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%

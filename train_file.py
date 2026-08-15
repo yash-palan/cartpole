@@ -60,7 +60,10 @@ def creating_network(input_clip_learning_network,qvc_network,understanding_qvc_n
     return network
 #################################
 #################################
-def initializing_qvc(number_of_layers,number_of_wires,quantum_function):
+def initializing_qvc(number_of_layers
+                     ,number_of_wires
+                     ,quantum_function
+                     ,entanglement_coupling):
     """
     This function just initializes the quantum variational circuit 
 
@@ -71,6 +74,8 @@ def initializing_qvc(number_of_layers,number_of_wires,quantum_function):
     number_of_wires: the input wires of the quantum circuit
 
     quantum_function: The quantum function for the quantum circuit
+
+    entanglement_coupling: (str) Type of entanglement coupling needed. Eg: linear, circular
     """
     
     complete_weight_matrix = torch.rand(size=(number_of_layers,number_of_wires,3) ,dtype=torch.float32)
@@ -82,7 +87,9 @@ def initializing_qvc(number_of_layers,number_of_wires,quantum_function):
 
     qvc_object = qcc.complete_quantum_variational_circuit(qvc = quantum_function,
                                                           complete_weight_matrix=complete_weight_matrix,
-                                                          dev = dev)
+                                                          dev = dev,
+                                                          entanglement_coupling= entanglement_coupling
+                                                          )
     return(qvc_object)
 #################################
 #################################
@@ -206,10 +213,13 @@ def training_loop(env,config:dict,activation_map:dict, betas=(0.9, 0.999)):
     if(config["qvc_network"] is not None):    
         qvc_network = initializing_qvc(number_of_layers=config["qvc_network"]["number_of_layers"],
                                         number_of_wires=config["qvc_network"]["number_of_wires"],
-                                        quantum_function=qcc.complete_variational_quantum_circuit_function)
+                                        quantum_function=qcc.complete_variational_quantum_circuit_function,
+                                        entanglement_coupling=config["entanglement_coupling"])
         # Plotting the qvc
         random_input_vector = torch.rand(size=(1,number_wires))
-        qvc_network.draw_quantum_circuit(input_vector=random_input_vector)
+        qvc_network.draw_quantum_circuit(input_vector=random_input_vector
+                                         ,to_save=config["to_save"]
+                                         ,complete_file_name=config["complete_file_name"])
     else:
         qvc_network = None
     # Creating the tail of the circuit
@@ -340,19 +350,27 @@ if __name__=="__main__":
 
     buffer_size = 5000
 
-    number_wires = 2
+    number_wires = 3
     number_layers = 2
 
-    start = 10
-    end =  15
+    start = 0
+    end =  10
     step = 1
 
     # seed = 5142
     base_path = os.getcwd()
-    complete_path = base_path + '/results/'
+    # complete_path = base_path + '/results/'
+    complete_path = base_path + '/results_circular/'
 
     for seed in range(start,end,step):
         print(f"\nStarted seed:{seed}")
+
+        to_save = False
+        complete_file_name = None
+        if(seed-start ==0):
+            to_save = True
+            complete_file_name = complete_path + "circuit_diagram.png"
+
         config = {
             "input_clip_learning_network":
             {
@@ -375,7 +393,10 @@ if __name__=="__main__":
             "number_of_episodes":num_episodes,
             "number_of_timesteps":num_timesteps,
             "buffer_size":buffer_size,
-            "complete_path":complete_path
+            "complete_path":complete_path,
+            "entanglement_coupling":'circular',
+            "to_save":to_save,
+            "complete_file_name":complete_file_name
         }
 
         # config = {
